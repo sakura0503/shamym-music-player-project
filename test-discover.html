@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><title>Discover Test</title></head>
+<body>
+<div class="app-container">
+  <aside class="sidebar" id="sidebar">
+    <button class="close-btn" id="closeSidebar">&times;</button>
+    <nav class="sidebar-nav">
+      <a href="index.html" class="nav-item" data-page="home">Home</a>
+      <a href="discover.html" class="nav-item" data-page="discover">Discover</a>
+      <a href="library.html" class="nav-item" data-page="library">Library</a>
+      <a href="playlist.html" class="nav-item" data-page="playlist">Playlist</a>
+      <div class="playlist-container" id="playlistContainer"></div>
+    </nav>
+  </aside>
+  <main class="main-content">
+    <header class="top-bar">
+      <button class="menu-btn" id="menuBtn"></button>
+      <div class="search-container">
+        <input type="text" class="search-input" id="searchInput">
+        <div class="search-results" id="searchResults"></div>
+      </div>
+    </header>
+    <div class="content-area" id="contentArea">
+      <div class="page active" id="discoverPage">
+        <div class="scroll-container" id="latestReleases"></div>
+        <div class="scroll-container" id="trendingSongs"></div>
+        <div class="scroll-container" id="popularSongs"></div>
+        <div class="scroll-container" id="popularAlbums"></div>
+      </div>
+    </div>
+  </main>
+  <footer class="player-bar" id="playerBar">
+    <div class="track-name" id="playerTrackName">No track playing</div>
+    <div class="track-artist" id="playerTrackArtist">x</div>
+    <img id="playerImg">
+    <span id="totalTime">0</span><span id="currentTime">0</span>
+    <div class="progress-bar" id="progressBar"></div><div class="progress-fill" id="progressFill"></div>
+    <button class="ctrl-btn" id="prevBtn"></button>
+    <button class="ctrl-btn" id="playPauseBtn"></button>
+    <button class="ctrl-btn" id="nextBtn"></button>
+    <button class="ctrl-btn" id="likeBtn"></button>
+    <button class="ctrl-btn" id="shuffleBtn"></button>
+    <button class="ctrl-btn" id="repeatBtn"></button>
+  </footer>
+</div>
+<div class="overlay" id="overlay"></div>
+<div id="err"></div><div id="status"></div>
+<script>window.addEventListener('error', function(e){ var el=document.getElementById('err'); el.textContent='ERR: '+(e.message||'?')+' @'+(e.lineno||'?')+' | '+(e.error&&e.error.stack?e.error.stack:''); });</script>
+<script src="script.js"></script>
+<script>
+setTimeout(function(){
+  var s=document.getElementById('status');
+  s.textContent='typeof playSong='+typeof playSong;
+  try{
+    playSong(1, null, [1,2,3,4,5,6,7,8]);
+    s.textContent+=' | direct trackName='+document.getElementById('playerTrackName').textContent;
+    s.textContent+=' | cp='+(typeof currentPlaylist!=='undefined'?currentPlaylist:'?');
+    s.textContent+=' | cq='+(typeof currentQueue!=='undefined'?JSON.stringify(currentQueue):'?');
+  }catch(e){ s.textContent+=' | DIRECT ERR: '+e.message+' || '+e.stack; }
+},1500);
+</script>
+</body></html>
