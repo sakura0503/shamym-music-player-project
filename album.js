@@ -41,6 +41,8 @@ function renderAlbumDetail() {
     const albumSongs = getAlbumSongs(albumId);
     const container = document.getElementById('albumDetail');
     const totalDuration = getTotalDuration(albumSongs);
+    const artistObj = artists.find(a => a.name === album.artist);
+    const artistPage = artistObj ? artistPages[artistObj.id] : null;
     const albumImage = album.image || 'AfterHours-Album.webp';
 
     let html = `
@@ -49,9 +51,9 @@ function renderAlbumDetail() {
                 <img src="${albumImage}" alt="${album.title}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;">
             </div>
             <div class="album-header-info">
-                <div class="album-header-title">${album.title} <span class="album-badge">Album</span></div>
+                <div class="album-header-title">${album.title} <span class="album-badge">${album.type === 'ep' ? 'EP' : 'Album'}</span></div>
                 <div class="album-header-meta">
-                    <span>${album.artist}</span>
+                    <span class="${artistPage ? 'clickable-artist' : ''}" ${artistPage ? `onclick="window.location.href='${artistPage}'"` : ''}>${album.artist}</span>
                     <span>&bull;</span>
                     <span>${album.year}</span>
                 </div>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Music Player</title>
+    <title>Bad Bunny - Music Player</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -15,7 +15,7 @@
                 <button class="close-btn" id="closeSidebar">&times;</button>
             </div>
             <nav class="sidebar-nav">
-                <a href="#" class="nav-item active" data-page="home">
+                <a href="index.html" class="nav-item">
                     <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2.586a1 1 0 00-.293-.707l5-5a1 1 0 011.414 0l7 7a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7a1 1 0 010-1.414l7-7a1 1 0 011.414 0z"/></svg>
                     <span>Home</span>
                 </a>
@@ -59,37 +59,8 @@
             </header>
 
             <div class="content-area" id="contentArea">
-                <div class="page active" id="homePage">
-                    <h2 class="section-title">Recently Played</h2>
-                    <div class="horizontal-scroll">
-                        <button class="scroll-btn scroll-left" id="recentlyLeft">&lt;</button>
-                        <div class="scroll-container" id="recentlyPlayed"></div>
-                        <button class="scroll-btn scroll-right" id="recentlyRight">&gt;</button>
-                    </div>
-
-                <h2 class="section-title">Favourite Albums</h2>
-                <div class="horizontal-scroll">
-                    <button class="scroll-btn scroll-left" id="favAlbumsLeft">&lt;</button>
-                    <div class="scroll-container" id="favouriteAlbums"></div>
-                    <button class="scroll-btn scroll-right" id="favAlbumsRight">&gt;</button>
-                </div>
-
-                <h2 class="section-title">Popular Artists</h2>
-                    <div class="horizontal-scroll">
-                        <button class="scroll-btn scroll-left" id="artistsLeft">&lt;</button>
-                        <div class="scroll-container" id="popularArtists"></div>
-                        <button class="scroll-btn scroll-right" id="artistsRight">&gt;</button>
-                    </div>
-                </div>
-
-                <div class="page" id="libraryPage">
-                    <h2 class="page-title">Your Library</h2>
-                    <div class="library-content" id="libraryContent"></div>
-                </div>
-
-                <div class="page" id="playlistPage">
-                    <button class="back-btn" id="backToLibrary">&larr; Back to Library</button>
-                    <div id="playlistDetail"></div>
+                <div class="page active" id="artistPage">
+                    <div id="artistDetail"></div>
                 </div>
             </div>
         </main>
@@ -142,5 +113,9 @@
     <div class="overlay" id="overlay"></div>
 
     <script src="script.js"></script>
+    <script>
+        window.artistPageId = 11;
+    </script>
+    <script src="artist.js"></script>
 </body>
 </html>
