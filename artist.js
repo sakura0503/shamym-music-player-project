@@ -133,7 +133,7 @@ function renderArtistDetail() {
     relatedArtists.forEach(relArtist => {
         const artistPage = artistPages[relArtist.id];
         html += `
-            <div class="card artist-card ${artistPage ? 'clickable' : ''}" ${artistPage ? `onclick="window.location.href='${artistPage}'"` : ''}>
+            <div class="card artist-card ${artistPage ? 'clickable' : ''}" ${artistPage ? `onclick="navigateTo('${artistPage}')"` : ''}>
                 <div class="artist-img" style="background: linear-gradient(135deg, ${relArtist.color}, #555);">
                     ${relArtist.image ? `<img src="${relArtist.image}" alt="${relArtist.name}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` : relArtist.name.split(' ').map(n => n[0]).join('').substring(0, 2)}
                 </div>
@@ -165,8 +165,8 @@ function renderArtistDetail() {
         const hasSongs = album.songs && album.songs.length > 0;
         const clickable = albumPage || hasSongs;
         const cardClass = clickable ? 'artist-album-card clickable' : 'artist-album-card';
-        const clickAttr = albumPage ? `onclick="window.location.href='${albumPage}'"` : (hasSongs ? `onclick="playAlbum(${album.id})"` : '');
-        const playBtn = clickable ? `<button class="card-play-btn" onclick="event.stopPropagation(); ${albumPage ? `window.location.href='${albumPage}'` : `playAlbum(${album.id})`}">&#9654;</button>` : '';
+        const clickAttr = albumPage ? `onclick="navigateTo('${albumPage}')"` : (hasSongs ? `onclick="playAlbum(${album.id})"` : '');
+        const playBtn = clickable ? `<button class="card-play-btn" onclick="event.stopPropagation(); ${albumPage ? `navigateTo('${albumPage}')` : `playAlbum(${album.id})`}">&#9654;</button>` : '';
 
         const cardEl = document.createElement('div');
         cardEl.className = cardClass;
@@ -233,13 +233,13 @@ function renderArtistDetail() {
         const cardEl = document.createElement('div');
         cardEl.className = 'artist-singles-card';
         cardEl.innerHTML = `
-            <div class="card ${albumPage ? 'clickable' : ''}" ${albumPage ? `onclick="window.location.href='${albumPage}'"` : ''}>
+            <div class="card ${albumPage ? 'clickable' : ''}" ${albumPage ? `onclick="navigateTo('${albumPage}')"` : ''}>
                 <div class="card-img">
                     ${coverHtml}
                 </div>
                 <div class="card-title">${title}</div>
                 <div class="card-subtitle">${sub}</div>
-                <button class="card-play-btn" onclick="event.stopPropagation(); ${albumPage ? `window.location.href='${albumPage}'` : `artistPlaySong(${single.id})`}">&#9654;</button>
+                <button class="card-play-btn" onclick="event.stopPropagation(); ${albumPage ? `navigateTo('${albumPage}')` : `artistPlaySong(${single.id})`}">&#9654;</button>
                 <button class="card-menu-btn" data-type="song" data-id="${single.id}" onclick="event.stopPropagation();">
                     <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="6" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18" cy="12" r="2"/></svg>
                 </button>
@@ -306,14 +306,14 @@ function artistPlaySong(songId) {
 
 window.artistPlaySong = artistPlaySong;
 
-onSongChange = function (song) {
-    if (!document.getElementById('artistDetail')) return;
-    window.artistCurrentPlayingId = song.id;
+function renderArtistPage() {
     renderArtistDetail();
-};
+}
+
+window.renderArtistPage = renderArtistPage;
 
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', renderArtistDetail);
+    document.addEventListener('DOMContentLoaded', renderArtistPage);
 } else {
-    renderArtistDetail();
+    renderArtistPage();
 }

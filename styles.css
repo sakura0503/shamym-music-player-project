@@ -741,6 +741,13 @@ body {
     max-width: 300px;
 }
 
+.track-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
 .track-img {
     width: 56px;
     height: 56px;
@@ -804,12 +811,18 @@ body {
     justify-content: center;
 }
 
-.ctrl-btn:hover {
+.ctrl-btn:hover:not(.disabled) {
     color: var(--text-primary);
 }
 
-.ctrl-btn:active {
+.ctrl-btn:active:not(.disabled) {
     transform: scale(0.95);
+}
+
+.ctrl-btn.disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
 }
 
 .ctrl-btn svg {
@@ -872,6 +885,7 @@ body {
     flex: 1;
     justify-content: flex-end;
     max-width: 300px;
+    padding-right: 12px;
 }
 
 .overlay {
@@ -1524,10 +1538,12 @@ body {
 
 .artist-popular-song-play {
     display: none;
+    align-items: center;
+    justify-content: center;
 }
 
 .artist-popular-song:hover .artist-popular-song-play {
-    display: none;
+    display: flex;
 }
 
 .artist-albums-scroll {

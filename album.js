@@ -53,7 +53,7 @@ function renderAlbumDetail() {
             <div class="album-header-info">
                 <div class="album-header-title">${album.title} <span class="album-badge">${album.type === 'ep' ? 'EP' : 'Album'}</span></div>
                 <div class="album-header-meta">
-                    <span class="${artistPage ? 'clickable-artist' : ''}" ${artistPage ? `onclick="window.location.href='${artistPage}'"` : ''}>${album.artist}</span>
+                    <span class="${artistPage ? 'clickable-artist' : ''}" ${artistPage ? `onclick="navigateTo('${artistPage}')"` : ''}>${album.artist}</span>
                     <span>&bull;</span>
                     <span>${album.year}</span>
                 </div>
@@ -173,21 +173,34 @@ if (footerPlayPauseBtn) {
     });
 }
 
-onSongChange = function (song) {
-    if (!document.getElementById('albumDetail')) return;
-    currentPlayingSongId = song.id;
-    updateAlbumLikeButton(song.id);
-    renderAlbumDetail();
-};
-
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        setFooterHeartIcon();
-        updateAlbumLikeButton(currentPlayingSongId);
-        renderAlbumDetail();
-    });
-} else {
+function renderAlbumPage() {
     setFooterHeartIcon();
     updateAlbumLikeButton(currentPlayingSongId);
     renderAlbumDetail();
+    
+    const footerLikeBtn = document.getElementById('likeBtn');
+    if (footerLikeBtn) {
+        footerLikeBtn.addEventListener('click', () => {
+            if (currentPlayingSongId) {
+                if (isLiked(currentPlayingSongId)) {
+                    likedSongs = likedSongs.filter(id => id !== currentPlayingSongId);
+                } else {
+                    likedSongs.push(currentPlayingSongId);
+                }
+                if (typeof saveState === 'function') saveState();
+                updateAlbumLikeButton(currentPlayingSongId);
+                renderAlbumDetail();
+            }
+        });
+    }
+}
+
+window.renderAlbumPage = renderAlbumPage;
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        renderAlbumPage();
+    });
+} else {
+    renderAlbumPage();
 }

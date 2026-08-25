@@ -15,11 +15,11 @@
                 <button class="close-btn" id="closeSidebar">&times;</button>
             </div>
             <nav class="sidebar-nav">
-                <a href="#" class="nav-item active" data-page="home">
+                <a href="#/home" class="nav-item active" data-route="home">
                     <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2.586a1 1 0 00-.293-.707l5-5a1 1 0 011.414 0l7 7a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7a1 1 0 010-1.414l7-7a1 1 0 011.414 0z"/></svg>
                     <span>Home</span>
                 </a>
-                <a href="discover.html" class="nav-item">
+                <a href="#/discover" class="nav-item" data-route="discover">
                     <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
                     <span>Discover</span>
                 </a>
@@ -62,23 +62,56 @@
                 <div class="page active" id="homePage">
                     <h2 class="section-title">Recently Played</h2>
                     <div class="horizontal-scroll">
-                        <button class="scroll-btn scroll-left" id="recentlyLeft">&lt;</button>
+                        <button class="scroll-btn scroll-left" data-target="recentlyPlayed" data-dir="left">&lt;</button>
                         <div class="scroll-container" id="recentlyPlayed"></div>
-                        <button class="scroll-btn scroll-right" id="recentlyRight">&gt;</button>
+                        <button class="scroll-btn scroll-right" data-target="recentlyPlayed" data-dir="right">&gt;</button>
                     </div>
 
-                <h2 class="section-title">Favourite Albums</h2>
-                <div class="horizontal-scroll">
-                    <button class="scroll-btn scroll-left" id="favAlbumsLeft">&lt;</button>
-                    <div class="scroll-container" id="favouriteAlbums"></div>
-                    <button class="scroll-btn scroll-right" id="favAlbumsRight">&gt;</button>
+                    <h2 class="section-title">Favourite Albums</h2>
+                    <div class="horizontal-scroll">
+                        <button class="scroll-btn scroll-left" data-target="favouriteAlbums" data-dir="left">&lt;</button>
+                        <div class="scroll-container" id="favouriteAlbums"></div>
+                        <button class="scroll-btn scroll-right" data-target="favouriteAlbums" data-dir="right">&gt;</button>
+                    </div>
+
+                    <h2 class="section-title">Popular Artists</h2>
+                    <div class="horizontal-scroll">
+                        <button class="scroll-btn scroll-left" data-target="popularArtists" data-dir="left">&lt;</button>
+                        <div class="scroll-container" id="popularArtists"></div>
+                        <button class="scroll-btn scroll-right" data-target="popularArtists" data-dir="right">&gt;</button>
+                    </div>
                 </div>
 
-                <h2 class="section-title">Popular Artists</h2>
+                <div class="page" id="discoverPage">
+                    <h2 class="page-title">Discover New Music</h2>
+                    <p class="page-desc">Explore new genres, artists, and playlists curated just for you.</p>
+
+                    <h2 class="section-title">Latest Releases</h2>
                     <div class="horizontal-scroll">
-                        <button class="scroll-btn scroll-left" id="artistsLeft">&lt;</button>
-                        <div class="scroll-container" id="popularArtists"></div>
-                        <button class="scroll-btn scroll-right" id="artistsRight">&gt;</button>
+                        <button class="scroll-btn scroll-left" data-target="latestReleases" data-dir="left">&lt;</button>
+                        <div class="scroll-container" id="latestReleases"></div>
+                        <button class="scroll-btn scroll-right" data-target="latestReleases" data-dir="right">&gt;</button>
+                    </div>
+
+                    <h2 class="section-title">Trending Songs</h2>
+                    <div class="horizontal-scroll">
+                        <button class="scroll-btn scroll-left" data-target="trendingSongs" data-dir="left">&lt;</button>
+                        <div class="scroll-container" id="trendingSongs"></div>
+                        <button class="scroll-btn scroll-right" data-target="trendingSongs" data-dir="right">&gt;</button>
+                    </div>
+
+                    <h2 class="section-title">Popular Songs</h2>
+                    <div class="horizontal-scroll">
+                        <button class="scroll-btn scroll-left" data-target="popularSongs" data-dir="left">&lt;</button>
+                        <div class="scroll-container" id="popularSongs"></div>
+                        <button class="scroll-btn scroll-right" data-target="popularSongs" data-dir="right">&gt;</button>
+                    </div>
+
+                    <h2 class="section-title">Most Listened Albums</h2>
+                    <div class="horizontal-scroll">
+                        <button class="scroll-btn scroll-left" data-target="popularAlbums" data-dir="left">&lt;</button>
+                        <div class="scroll-container" id="popularAlbums"></div>
+                        <button class="scroll-btn scroll-right" data-target="popularAlbums" data-dir="right">&gt;</button>
                     </div>
                 </div>
 
@@ -90,6 +123,26 @@
                 <div class="page" id="playlistPage">
                     <button class="back-btn" id="backToLibrary">&larr; Back to Library</button>
                     <div id="playlistDetail"></div>
+                </div>
+
+                <div class="page" id="albumPage">
+                    <div id="albumDetail"></div>
+                </div>
+
+                <div class="page" id="artistPage">
+                    <div id="artistDetail"></div>
+                </div>
+
+                <div class="page" id="searchPage">
+                    <div class="search-page-header">
+                        <h2 class="search-page-title" id="searchPageTitle">Search Results</h2>
+                    </div>
+                    <div class="search-tabs">
+                        <button class="search-tab active" data-tab="songs">Songs</button>
+                        <button class="search-tab" data-tab="albums">Albums</button>
+                        <button class="search-tab" data-tab="artists">Artists</button>
+                    </div>
+                    <div class="search-results-page" id="searchResultsPage"></div>
                 </div>
             </div>
         </main>

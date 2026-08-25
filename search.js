@@ -1,3 +1,13 @@
+function getSearchQuery() {
+    const hash = window.location.hash;
+    if (hash) {
+        const query = new URLSearchParams(hash.split('?')[1]).get('q');
+        if (query) return query;
+    }
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('q');
+}
+
 function showSearchResultsPage(query) {
     const searchResultsPage = document.getElementById('searchResultsPage');
     const searchPageTitle = document.getElementById('searchPageTitle');
@@ -8,7 +18,7 @@ function showSearchResultsPage(query) {
     }
 
     if (typeof songs === 'undefined' || typeof albums === 'undefined' || typeof artists === 'undefined') {
-        searchResultsPage.innerHTML = '<div style="padding: 20px; color: var(--text-muted); text-align: center;">Error: Data not loaded. <a href="index.html">Go back</a></div>';
+        searchResultsPage.innerHTML = '<div style="padding: 20px; color: var(--text-muted); text-align: center;">Error: Data not loaded. <a href="main-page.html#/home">Go back</a></div>';
         return;
     }
 
@@ -45,7 +55,7 @@ function showSearchResultsPage(query) {
             const albumPage = albumPages[album.id];
             let action = '';
             if (albumPage) {
-                action = `window.location.href='${albumPage}'`;
+                action = `navigateTo('${albumPage}')`;
             } else if (typeof album.id === 'number') {
                 action = `playAlbum(${album.id})`;
             } else {
@@ -75,7 +85,7 @@ function showSearchResultsPage(query) {
         if (!matchedArtists.length) return '<div style="padding: 16px; color: var(--text-muted); text-align: center;">No artists found</div>';
         return matchedArtists.map(artist => {
             const artistPage = artistPages[artist.id];
-            const action = artistPage ? `window.location.href='${artistPage}'` : `alert('Artist page coming soon!')`;
+            const action = artistPage ? `navigateTo('${artistPage}')` : `alert('Artist page coming soon!')`;
             const imgContent = artist.image
                 ? `<img src="${artist.image}" alt="${artist.name}" style="width:100%;height:100%;object-fit:cover;">`
                 : artist.name.split(' ').map(n => n[0]).join('').substring(0, 2);
@@ -130,22 +140,14 @@ function showSearchResultsPage(query) {
     showPanel('songs');
 }
 
-try {
-    const urlParams = new URLSearchParams(window.location.search);
-    const query = urlParams.get('q');
+function renderSearchPage() {
+    const query = getSearchQuery();
     if (query) {
         showSearchResultsPage(query.toLowerCase().trim());
     }
-} catch (e) {
-    console.error('Search page error:', e);
-    const searchResultsPage = document.getElementById('searchResultsPage');
-    if (searchResultsPage) {
-        searchResultsPage.innerHTML = `<div style="padding: 20px; color: red;">Error loading search results: ${e.message}</div>`;
+    if (searchInput) {
+        searchInput.value = query || '';
     }
 }
 
-if (searchInput) {
-    const urlParams = new URLSearchParams(window.location.search);
-    const query = urlParams.get('q');
-    searchInput.value = query || '';
-}
+window.renderSearchPage = renderSearchPage;
