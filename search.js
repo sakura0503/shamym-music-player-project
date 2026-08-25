@@ -1,51 +1,21 @@
 function showSearchResultsPage(query) {
     const searchResultsPage = document.getElementById('searchResultsPage');
     const searchPageTitle = document.getElementById('searchPageTitle');
-    
+
     if (!searchResultsPage) {
         console.error('searchResultsPage not found');
-        document.body.innerHTML = '<div style="padding:20px;color:red;">Error: search results container not found</div>';
         return;
     }
-    
+
     if (typeof songs === 'undefined' || typeof albums === 'undefined' || typeof artists === 'undefined') {
         searchResultsPage.innerHTML = '<div style="padding: 20px; color: var(--text-muted); text-align: center;">Error: Data not loaded. <a href="index.html">Go back</a></div>';
         return;
     }
-    
+
     const matchedSongs = songs.filter(s => s.title.toLowerCase().includes(query) || s.artist.toLowerCase().includes(query));
     const matchedAlbums = albums.filter(a => a.title.toLowerCase().includes(query) || a.artist.toLowerCase().includes(query));
     const matchedArtists = artists.filter(a => a.name.toLowerCase().includes(query));
-    
-    const matchedVirtualSingles = [];
-    if (typeof singlesMap !== 'undefined') {
-        Object.keys(singlesMap).forEach(aid => {
-            const artistFor = artists.find(a => a.id === parseInt(aid));
-            singlesMap[aid].forEach(item => {
-                if (item && item.title && !item.id) {
-                    const artistName = artistFor ? artistFor.name : '';
-                    if (item.title.toLowerCase().includes(query) || artistName.toLowerCase().includes(query)) {
-                        matchedVirtualSingles.push({ ...item, artistName });
-                    }
-                }
-            });
-        });
-    }
-    
-    const allAlbums = [...matchedAlbums];
-    matchedVirtualSingles.forEach(item => {
-        allAlbums.push({
-            id: 'virtual-' + item.title,
-            title: item.title,
-            artist: item.artistName || '',
-            type: item.type,
-            year: item.year,
-            explicit: item.explicit,
-            image: null,
-            color: '#d4a574'
-        });
-    });
-    
+
     function renderSongs() {
         if (!matchedSongs.length) return '<div style="padding: 16px; color: var(--text-muted); text-align: center;">No songs found</div>';
         return matchedSongs.map(song => {
@@ -61,14 +31,17 @@ function showSearchResultsPage(query) {
                         <div class="search-result-page-sub">${song.artist}</div>
                     </div>
                     <span class="search-result-page-type">Song</span>
+                    <button class="card-menu-btn" data-type="song" data-id="${song.id}" onclick="event.stopPropagation(); showCardContextMenu(this, 'song', ${song.id});">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="6" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18" cy="12" r="2"/></svg>
+                    </button>
                 </div>
             `;
         }).join('');
     }
-    
+
     function renderAlbums() {
-        if (!allAlbums.length) return '<div style="padding: 16px; color: var(--text-muted); text-align: center;">No albums found</div>';
-        return allAlbums.map(album => {
+        if (!matchedAlbums.length) return '<div style="padding: 16px; color: var(--text-muted); text-align: center;">No albums found</div>';
+        return matchedAlbums.map(album => {
             const albumPage = albumPages[album.id];
             let action = '';
             if (albumPage) {
@@ -90,11 +63,14 @@ function showSearchResultsPage(query) {
                         <div class="search-result-page-sub">${album.artist}</div>
                     </div>
                     <span class="search-result-page-type">${typeLabel}</span>
+                    <button class="card-menu-btn" data-type="album" data-id="${album.id}" onclick="event.stopPropagation(); showCardContextMenu(this, 'album', ${album.id});">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="6" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18" cy="12" r="2"/></svg>
+                    </button>
                 </div>
             `;
         }).join('');
     }
-    
+
     function renderArtists() {
         if (!matchedArtists.length) return '<div style="padding: 16px; color: var(--text-muted); text-align: center;">No artists found</div>';
         return matchedArtists.map(artist => {
@@ -115,44 +91,43 @@ function showSearchResultsPage(query) {
             `;
         }).join('');
     }
-    
+
     if (searchPageTitle) {
         searchPageTitle.textContent = `Search Results for "${query}"`;
     }
-    
-    const content = {
-        songs: renderSongs(),
-        albums: renderAlbums(),
-        artists: renderArtists()
+
+    const songsHtml = renderSongs();
+    const albumsHtml = renderAlbums();
+    const artistsHtml = renderArtists();
+
+    const panels = {
+        songs: songsHtml || '<div style="padding: 16px; color: var(--text-muted); text-align: center;">No results found</div>',
+        albums: albumsHtml || '<div style="padding: 16px; color: var(--text-muted); text-align: center;">No results found</div>',
+        artists: artistsHtml || '<div style="padding: 16px; color: var(--text-muted); text-align: center;">No results found</div>'
     };
-    
-    const panels = ['songs', 'albums', 'artists'];
+
+    const panelKeys = ['songs', 'albums', 'artists'];
     let currentTab = 'songs';
-    
-    function renderTrack() {
-        const html = panels.map((key, i) => `
-            <div class="search-results-panel" data-panel="${key}">${content[key] || '<div style="padding: 16px; color: var(--text-muted); text-align: center;">No results found</div>'}</div>
+
+    function showPanel(tab) {
+        const html = panelKeys.map(key => `
+            <div class="search-results-panel" data-panel="${key}" style="display: ${key === tab ? 'block' : 'none'};">${panels[key]}</div>
         `).join('');
-        searchResultsPage.innerHTML = `<div class="search-results-track">${html}</div>`;
-    }
-    
-    function slideTo(tab) {
-        const track = searchResultsPage.querySelector('.search-results-track');
-        const index = panels.indexOf(tab);
-        if (track && index >= 0) {
-            track.style.transform = `translateX(-${index * 100}%)`;
-        }
+        searchResultsPage.innerHTML = html;
+
         document.querySelectorAll('.search-tab').forEach(t => t.classList.remove('active'));
-        document.querySelector(`.search-tab[data-tab="${tab}"]`).classList.add('active');
+        const activeTab = document.querySelector(`.search-tab[data-tab="${tab}"]`);
+        if (activeTab) activeTab.classList.add('active');
         currentTab = tab;
     }
-    
+
     document.querySelectorAll('.search-tab').forEach(tab => {
-        tab.addEventListener('click', () => slideTo(tab.dataset.tab));
+        tab.addEventListener('click', () => {
+            showPanel(tab.dataset.tab);
+        });
     });
-    
-    renderTrack();
-    slideTo('songs');
+
+    showPanel('songs');
 }
 
 try {
@@ -169,7 +144,6 @@ try {
     }
 }
 
-const searchInput = document.getElementById('searchInput');
 if (searchInput) {
     const urlParams = new URLSearchParams(window.location.search);
     const query = urlParams.get('q');

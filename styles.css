@@ -724,7 +724,7 @@ body {
     right: 0;
     height: 90px;
     background: var(--bg-primary);
-    border-top: 1px solid var(--border);
+    border-top: 2px solid #3a523b;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -1193,9 +1193,114 @@ body {
     display: flex;
     align-items: center;
     color: var(--text-secondary);
-    cursor: default;
+    cursor: pointer;
     order: 3;
     margin-left: auto;
+}
+
+.search-result-page-item {
+    position: relative;
+}
+
+.search-result-page-item .card-menu-btn {
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    transform: translateY(-50%);
+    opacity: 0;
+    transition: opacity 0.2s, background 0.2s;
+}
+
+.search-result-page-item:hover .card-menu-btn {
+    opacity: 1;
+}
+
+.artist-popular-song .card-menu-btn {
+    position: absolute;
+    top: 50%;
+    right: 4px;
+    transform: translateY(-50%);
+    opacity: 0;
+    transition: opacity 0.2s, background 0.2s;
+}
+
+.artist-popular-song:hover .card-menu-btn {
+    opacity: 1;
+}
+
+.card-menu-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(0, 0, 0, 0.3);
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s, background 0.2s;
+    z-index: 10;
+    padding: 0;
+}
+
+.card:hover .card-menu-btn {
+    opacity: 1;
+}
+
+.card-menu-btn:hover {
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.card-menu-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.card-context-menu {
+    position: fixed;
+    background: var(--bg-card);
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    padding: 8px 0;
+    min-width: 200px;
+    z-index: 2000;
+    display: none;
+    border: 1px solid var(--border);
+}
+
+.card-context-menu.active {
+    display: block;
+}
+
+.card-context-menu-item {
+    padding: 10px 16px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    transition: background 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    white-space: nowrap;
+}
+
+.card-context-menu-item:hover {
+    background: var(--bg-hover);
+}
+
+.card-context-menu-item.disabled {
+    color: var(--text-muted);
+    cursor: default;
+    pointer-events: none;
+}
+
+.card-context-menu-item.disabled:hover {
+    background: transparent;
 }
 
 @media (max-width: 768px) {
@@ -1592,10 +1697,11 @@ body {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 10px 12px;
+    padding: 10px 36px 10px 12px;
     border-radius: 6px;
     cursor: pointer;
     transition: background 0.2s;
+    position: relative;
 }
 
 .search-result-page-item:hover {

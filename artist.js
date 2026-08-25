@@ -9,7 +9,7 @@ const singlesMap = {
         {title: "Popular (feat. Playboi Carti)", year: "2024", type: "single", explicit: true},
         {title: "One Of The Girls", year: "2024", type: "single"}
     ],
-    9: [160, 161, 162, 163, 98, 164, 104, 99, 165, 41],
+     9: [160, 161, 162, 163, 98, 164, 104],
     10: [110, 111, 112, 113, 114, 115],
     11: [
         {title: "ALAMBRE PúA", year: "2025", type: "single", explicit: true},
@@ -100,6 +100,9 @@ function renderArtistDetail() {
                         <div class="artist-popular-song-artist">${song.artist}</div>
                     </div>
                     <button class="artist-popular-song-play" data-song-id="${song.id}">${playIcon}</button>
+                    <button class="card-menu-btn" data-type="song" data-id="${song.id}" onclick="event.stopPropagation(); showCardContextMenu(this, 'song', ${song.id});">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="6" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18" cy="12" r="2"/></svg>
+                    </button>
                 </div>
             `;
         });
@@ -175,13 +178,23 @@ function renderArtistDetail() {
                 <div class="card-title">${album.title}</div>
                 <div class="card-subtitle">${album.explicit ? '<span class="explicit-badge">E</span> • ' : ''}${album.year}</div>
                 ${playBtn}
+                <button class="card-menu-btn" data-type="album" data-id="${album.id}" onclick="event.stopPropagation();">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="6" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18" cy="12" r="2"/></svg>
+                </button>
             </div>
         `;
+        const albumMenuBtn = cardEl.querySelector('.card-menu-btn');
+        if (albumMenuBtn && typeof showCardContextMenu === 'function') {
+            albumMenuBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showCardContextMenu(albumMenuBtn, 'album', album.id);
+            });
+        }
         albumsContainer.appendChild(cardEl);
     });
 
     const singlesContainer = document.getElementById('singlesScroll');
-    artistSingles.forEach(single => {
+    artistSingles.forEach((single, index) => {
         if (typeof single === 'object' && single.title && !single.id) {
             const title = single.title;
             const sub = `${single.type === 'ep' ? 'EP' : 'Single'} • ${single.year}`;
@@ -194,8 +207,18 @@ function renderArtistDetail() {
                     </div>
                     <div class="card-title">${title}</div>
                     <div class="card-subtitle">${single.explicit ? '<span class="explicit-badge">E</span> • ' : ''}${sub}</div>
+                    <button class="card-menu-btn" data-type="song" data-id="virtual-${index}" onclick="event.stopPropagation();">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="6" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18" cy="12" r="2"/></svg>
+                    </button>
                 </div>
             `;
+            const virtualMenuBtn = cardEl.querySelector('.card-menu-btn');
+            if (virtualMenuBtn && typeof showCardContextMenu === 'function') {
+                virtualMenuBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    showCardContextMenu(virtualMenuBtn, 'song', null, single, artist);
+                });
+            }
             singlesContainer.appendChild(cardEl);
             return;
         }
@@ -217,8 +240,18 @@ function renderArtistDetail() {
                 <div class="card-title">${title}</div>
                 <div class="card-subtitle">${sub}</div>
                 <button class="card-play-btn" onclick="event.stopPropagation(); ${albumPage ? `window.location.href='${albumPage}'` : `artistPlaySong(${single.id})`}">&#9654;</button>
+                <button class="card-menu-btn" data-type="song" data-id="${single.id}" onclick="event.stopPropagation();">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="6" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18" cy="12" r="2"/></svg>
+                </button>
             </div>
         `;
+        const singleMenuBtn = cardEl.querySelector('.card-menu-btn');
+        if (singleMenuBtn && typeof showCardContextMenu === 'function') {
+            singleMenuBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showCardContextMenu(singleMenuBtn, 'song', single.id);
+            });
+        }
         singlesContainer.appendChild(cardEl);
     });
 

@@ -76,7 +76,7 @@ function renderAlbumDetail() {
         const liked = isLiked(song.id);
         const isExplicit = albumId === 1 ? ![8, 9, 10, 12].includes(index) : false;
         html += `
-            <div class="album-song-row ${isPlaying ? 'playing' : ''}" ${clickable ? `onclick="playSong(${song.id})"` : ''}>
+            <div class="album-song-row ${isPlaying ? 'playing' : ''}" data-song-id="${song.id}" ${clickable ? `onclick="playSong(${song.id})"` : ''}>
                 <div class="album-song-num">
                     ${isPlaying ? '<svg class="playing-icon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>' : index + 1}
                 </div>
@@ -90,7 +90,7 @@ function renderAlbumDetail() {
                         <svg viewBox="0 0 24 24" width="16" height="16" fill="${liked ? 'var(--accent)' : 'none'}" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
                     </span>
                     <span class="duration-text">${song.duration}</span>
-                    <span class="song-menu">
+                    <span class="song-menu" onclick="event.stopPropagation(); showCardContextMenu(this, 'song', ${song.id});">
                         <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><circle cx="6" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18" cy="12" r="2"/></svg>
                     </span>
                 </div>

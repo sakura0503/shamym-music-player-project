@@ -97,7 +97,7 @@ const songs = [
     { id: 96, title: "sunny days", artist: "wave to earth", album: "0.1 flaws and all.", duration: "4:08", cover: null, color: "#7eb8da" },
     { id: 97, title: "homesick", artist: "wave to earth", album: "0.1 flaws and all.", duration: "5:06", cover: null, color: "#7eb8da" },
     { id: 98, title: "daisy.", artist: "wave to earth", album: "daisy.", duration: "3:38", cover: null, color: "#7eb8da" },
-    { id: 99, title: "surf.", artist: "wave to earth", album: "surf.", duration: "3:49", cover: null, color: "#7eb8da" },
+    { id: 99, title: "surf.", artist: "wave to earth", album: "summer flows 0.02", duration: "3:49", cover: null, color: "#7eb8da" },
     { id: 100, title: "slow dive", artist: "wave to earth", album: "0.1 flaws and all.", duration: "4:40", cover: null, color: "#7eb8da" },
     { id: 101, title: "holyland", artist: "wave to earth", album: "0.1 flaws and all.", duration: "4:16", cover: null, color: "#7eb8da" },
     { id: 102, title: "beck.", artist: "wave to earth", album: "play with earth! 0.03", duration: "4:08", cover: null, color: "#7eb8da" },
@@ -195,7 +195,6 @@ const albums = [
     { id: 25, title: "play with earth! 0.03 (extended)", artist: "wave to earth", year: "2024", type: "album", explicit: true, color: "#7eb8da", songs: [102, 103, 105] },
     { id: 26, title: "bad pieces", artist: "wave to earth", year: "2026", type: "album", color: "#7eb8da", songs: [] },
     { id: 27, title: "daisy.", artist: "wave to earth", year: "2021", type: "single", color: "#7eb8da", songs: [98] },
-    { id: 28, title: "surf.", artist: "wave to earth", year: "2020", type: "single", color: "#7eb8da", songs: [99] },
     { id: 11, title: "Un Verano Sin Ti", artist: "Bad Bunny", year: "2022", date: "2022-05-06", color: "#ff6b6b", explicit: true, image: "UnVeranoSinTi-Album.webp", songs: [43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 127, 128, 129] },
     { id: 28, title: "YHLQMDLG", artist: "Bad Bunny", year: "2020", date: "2020-02-29", color: "#ff6b6b", explicit: true, songs: [130, 131, 132] },
     { id: 29, title: "El Último Tour Del Mundo", artist: "Bad Bunny", year: "2020", date: "2020-11-27", color: "#ff6b6b", explicit: true, songs: [133, 134, 135] },
@@ -373,6 +372,7 @@ function getAlbumCoverForSong(song) {
 function renderCard(song, showPlayBtn = true, queueIds = null) {
     const div = document.createElement('div');
     div.className = 'card-wrapper';
+    div.dataset.songId = song.id;
     const cover = getAlbumCoverForSong(song);
     const coverHtml = cover
         ? `<img src="${cover}" alt="${song.album}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;">`
@@ -385,8 +385,16 @@ function renderCard(song, showPlayBtn = true, queueIds = null) {
             <div class="card-title">${song.title}</div>
             <div class="card-subtitle">${song.artist}</div>
             ${showPlayBtn ? `<button class="card-play-btn" onclick="event.stopPropagation(); playSong(${song.id}, null, ${queueIds ? JSON.stringify(queueIds) : 'null'})">&#9654;</button>` : ''}
+            <button class="card-menu-btn" data-type="song" data-id="${song.id}" onclick="event.stopPropagation();">
+                <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="6" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18" cy="12" r="2"/></svg>
+            </button>
         </div>
     `;
+    const menuBtn = div.querySelector('.card-menu-btn');
+    menuBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        showCardContextMenu(menuBtn, 'song', song.id);
+    });
     div.addEventListener('click', () => playSong(song.id, null, queueIds));
     return div;
 }
@@ -423,6 +431,7 @@ function renderHorizontalAlbums(containerId, albumIds) {
         if (album) {
             const div = document.createElement('div');
             div.className = 'card-wrapper';
+            div.dataset.albumId = album.id;
             const coverHtml = album.image
                 ? `<img src="${album.image}" alt="${album.title}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;">`
                 : `<div style="width:100%;height:100%;background: linear-gradient(135deg, ${album.color}, #333);display:flex;align-items:center;justify-content:center;border-radius:6px;color:#fff;font-weight:600;">${album.title.substring(0, 2).toUpperCase()}</div>`;
@@ -434,8 +443,16 @@ function renderHorizontalAlbums(containerId, albumIds) {
                     <div class="card-title">${album.title}</div>
                     <div class="card-subtitle">${album.artist} - ${album.year}</div>
                     <button class="card-play-btn" onclick="event.stopPropagation(); playAlbum(${album.id})">&#9654;</button>
+                    <button class="card-menu-btn" data-type="album" data-id="${album.id}" onclick="event.stopPropagation();">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="6" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18" cy="12" r="2"/></svg>
+                    </button>
                 </div>
             `;
+            const menuBtn = div.querySelector('.card-menu-btn');
+            menuBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showCardContextMenu(menuBtn, 'album', album.id);
+            });
             div.addEventListener('click', () => {
                 const albumPage = albumPages[album.id];
                 if (albumPage) {
@@ -997,8 +1014,163 @@ document.querySelectorAll('.scroll-btn').forEach(btn => {
     });
 });
 
+let cardContextMenu = null;
+let currentCardData = null;
+
+function createCardContextMenu() {
+    if (cardContextMenu) return;
+    cardContextMenu = document.createElement('div');
+    cardContextMenu.className = 'card-context-menu';
+    cardContextMenu.innerHTML = `
+        <div class="card-context-menu-item" data-action="play">Play Song</div>
+        <div class="card-context-menu-item" data-action="go-to-album">Go to Album</div>
+        <div class="card-context-menu-item" data-action="go-to-artist">Go to Artist</div>
+        <div class="card-context-menu-item disabled" data-action="play-next">Play Next</div>
+        <div class="card-context-menu-item disabled" data-action="add-to-queue">Add to Queue</div>
+        <div class="card-context-menu-item disabled" data-action="add-to-liked">Add to Liked Music</div>
+        <div class="card-context-menu-item disabled" data-action="add-to-playlist">Add to Playlist</div>
+        <div class="card-context-menu-item disabled" data-action="download">Download</div>
+    `;
+    document.body.appendChild(cardContextMenu);
+
+    cardContextMenu.addEventListener('click', e => {
+        const item = e.target.closest('.card-context-menu-item');
+        if (!item || item.classList.contains('disabled')) return;
+        const action = item.dataset.action;
+        handleCardMenuAction(action);
+        hideCardContextMenu();
+    });
+}
+
+function showCardContextMenu(button, type, id, singleObj, artistObj) {
+    if (!cardContextMenu) createCardContextMenu();
+    currentCardData = { type, id, singleObj, artistObj };
+
+    const menu = cardContextMenu;
+    const playItem = menu.querySelector('[data-action="play"]');
+    const goToAlbumItem = menu.querySelector('[data-action="go-to-album"]');
+    const goToArtistItem = menu.querySelector('[data-action="go-to-artist"]');
+
+    if (type === 'song') {
+        const song = getSongById(id);
+        if (!song && !singleObj) return;
+        const targetSong = song || singleObj;
+        playItem.textContent = 'Play Song';
+        playItem.classList.remove('disabled');
+
+        const album = albums.find(a => a.title === targetSong.album);
+        const albumPage = album ? albumPages[album.id] : null;
+        if (albumPage) {
+            goToAlbumItem.classList.remove('disabled');
+            goToAlbumItem.dataset.href = albumPage;
+        } else {
+            goToAlbumItem.classList.add('disabled');
+            goToAlbumItem.dataset.href = '';
+        }
+
+        const artist = artists.find(a => a.name === targetSong.artist);
+        const artistPage = artist ? artistPages[artist.id] : null;
+        if (artistPage) {
+            goToArtistItem.classList.remove('disabled');
+            goToArtistItem.dataset.href = artistPage;
+        } else {
+            goToArtistItem.classList.add('disabled');
+            goToArtistItem.dataset.href = '';
+        }
+    } else if (type === 'album') {
+        const album = albums.find(a => a.id === id);
+        if (!album) return;
+        playItem.textContent = 'Play Album';
+        playItem.classList.remove('disabled');
+
+        const albumPage = albumPages[album.id];
+        if (albumPage) {
+            goToAlbumItem.classList.remove('disabled');
+            goToAlbumItem.dataset.href = albumPage;
+        } else {
+            goToAlbumItem.classList.add('disabled');
+            goToAlbumItem.dataset.href = '';
+        }
+
+        const artist = artists.find(a => a.name === album.artist);
+        const artistPage = artist ? artistPages[artist.id] : null;
+        if (artistPage) {
+            goToArtistItem.classList.remove('disabled');
+            goToArtistItem.dataset.href = artistPage;
+        } else {
+            goToArtistItem.classList.add('disabled');
+            goToArtistItem.dataset.href = '';
+        }
+    }
+
+    const rect = button.getBoundingClientRect();
+    menu.style.left = rect.right + 'px';
+    menu.style.top = rect.top + 'px';
+    menu.classList.add('active');
+
+    const menuWidth = menu.offsetWidth;
+    const menuHeight = menu.offsetHeight;
+    if (rect.right + menuWidth > window.innerWidth) {
+        menu.style.left = (rect.left - menuWidth) + 'px';
+    }
+    if (rect.top + menuHeight > window.innerHeight) {
+        menu.style.top = (rect.bottom - menuHeight) + 'px';
+    }
+}
+
+function hideCardContextMenu() {
+    if (cardContextMenu) {
+        cardContextMenu.classList.remove('active');
+    }
+    currentCardData = null;
+}
+
+function handleCardMenuAction(action) {
+    if (!currentCardData) return;
+    const { type, id, singleObj, artistObj } = currentCardData;
+
+    if (action === 'play') {
+        if (type === 'song') {
+            if (id) {
+                playSong(id);
+            } else if (singleObj && artistObj) {
+                const artistSongs = songs.filter(s => s.artist === artistObj.name);
+                if (artistSongs.length > 0) {
+                    currentPlaylist = 'artist';
+                    currentQueue = artistSongs.map(s => s.id);
+                    currentSongIndex = 0;
+                    loadSong(artistSongs[0]);
+                    playAudio();
+                }
+            }
+        } else if (type === 'album') {
+            playAlbum(id);
+        }
+    } else if (action === 'go-to-album') {
+        const item = cardContextMenu.querySelector('[data-action="go-to-album"]');
+        const href = item.dataset.href;
+        if (href) {
+            window.location.href = href;
+        }
+    } else if (action === 'go-to-artist') {
+        const item = cardContextMenu.querySelector('[data-action="go-to-artist"]');
+        const href = item.dataset.href;
+        if (href) {
+            window.location.href = href;
+        }
+    }
+}
+
+document.addEventListener('click', e => {
+    if (cardContextMenu && !cardContextMenu.contains(e.target) && !e.target.closest('.card-menu-btn')) {
+        hideCardContextMenu();
+    }
+});
+
 window.playSong = playSong;
 window.playAlbum = playAlbum;
+window.showCardContextMenu = showCardContextMenu;
+window.hideCardContextMenu = hideCardContextMenu;
 
 const isSearchPage = window.location.pathname.includes('search.html');
 
