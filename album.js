@@ -58,6 +58,16 @@ function renderAlbumDetail() {
                     <span>${album.year}</span>
                 </div>
                 <div class="album-header-desc">${albumSongs.length} songs &bull; ${totalDuration}</div>
+                <div class="album-header-actions">
+                    <button class="album-action-btn" onclick="playAlbum(${albumId})">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                        Play
+                    </button>
+                    <button class="album-action-btn album-shuffle-btn" onclick="shuffleAlbum(${albumId})">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
+                        Shuffle
+                    </button>
+                </div>
             </div>
         </div>
         <div class="album-songs-header">
@@ -76,7 +86,7 @@ function renderAlbumDetail() {
         const liked = isLiked(song.id);
         const isExplicit = albumId === 1 ? ![8, 9, 10, 12].includes(index) : false;
         html += `
-            <div class="album-song-row ${isPlaying ? 'playing' : ''}" data-song-id="${song.id}" ${clickable ? `onclick="playSong(${song.id})"` : ''}>
+            <div class="album-song-row ${isPlaying ? 'playing' : ''}" data-song-id="${song.id}" ${clickable ? `onclick="albumPlaySong(${song.id})"` : ''}>
                 <div class="album-song-num">
                     ${isPlaying ? '<svg class="playing-icon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>' : index + 1}
                 </div>
@@ -102,7 +112,7 @@ function renderAlbumDetail() {
     container.innerHTML = html;
 }
 
-function playSong(songId) {
+function albumPlaySong(songId) {
     currentPlayingSongId = songId;
     const albumId = window.albumPageId || 1;
     currentPlaylist = 'album:' + albumId;
@@ -117,7 +127,32 @@ function playSong(songId) {
     playAudio();
 }
 
-window.playSong = playSong;
+window.albumPlaySong = albumPlaySong;
+
+function shuffleAlbum(albumId) {
+    const albumSongs = getAlbumSongs(albumId);
+    if (!albumSongs.length) return;
+    
+    currentPlaylist = 'album:' + albumId;
+    currentQueue = albumSongs.map(s => s.id);
+    originalQueue = currentQueue.slice();
+    currentQueue = shuffleArray(currentQueue);
+    currentSongIndex = 0;
+    
+    const song = albumSongs.find(s => s.id === currentQueue[0]);
+    if (!song) return;
+    
+    currentPlayingSongId = song.id;
+    loadSong(song);
+    playAudio();
+    
+    shuffle = true;
+    updateShuffleUI();
+    renderQueuePanel();
+    saveAudioState();
+}
+
+window.shuffleAlbum = shuffleAlbum;
 
 function setFooterHeartIcon() {
     const likeBtnEl = document.getElementById('likeBtn');

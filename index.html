@@ -15,11 +15,11 @@
                 <button class="close-btn" id="closeSidebar">&times;</button>
             </div>
             <nav class="sidebar-nav">
-                <a href="#/home" class="nav-item active" data-route="home">
+                <a href="#/home" class="nav-item active" data-page="home" data-route="home">
                     <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2.586a1 1 0 00-.293-.707l5-5a1 1 0 011.414 0l7 7a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7a1 1 0 010-1.414l7-7a1 1 0 011.414 0z"/></svg>
                     <span>Home</span>
                 </a>
-                <a href="#/discover" class="nav-item" data-route="discover">
+                <a href="#/discover" class="nav-item" data-page="discover" data-route="discover">
                     <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
                     <span>Discover</span>
                 </a>
@@ -34,7 +34,7 @@
                         </button>
                     </div>
                     <div class="playlist-container" id="playlistContainer">
-                        <a href="#" class="playlist-item" data-playlist="liked">
+                        <a href="#/playlist/liked" class="playlist-item" data-playlist="liked">
                             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
                             <span>Liked music</span>
                         </a>
@@ -59,7 +59,7 @@
             </header>
 
             <div class="content-area" id="contentArea">
-                <div class="page active" id="homePage">
+                <div class="page" id="homePage">
                     <h2 class="section-title">Recently Played</h2>
                     <div class="horizontal-scroll">
                         <button class="scroll-btn scroll-left" data-target="recentlyPlayed" data-dir="left">&lt;</button>
@@ -188,12 +188,89 @@
                 <button class="ctrl-btn" id="repeatBtn">
                     <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>
                 </button>
+                <button class="ctrl-btn" id="playerMenuBtn" title="More options">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="6" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18" cy="12" r="2"/></svg>
+                </button>
             </div>
         </footer>
     </div>
 
     <div class="overlay" id="overlay"></div>
 
+    <div class="expanded-player" id="expandedPlayer">
+      <div class="expanded-player-header">
+        <div class="expanded-player-header-left">
+          <button class="expanded-player-toggle" id="expandedPlayerToggle" title="Queue & Lyrics">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+          </button>
+          <button class="expanded-player-menu" id="expandedPlayerMenu" title="More options">
+            <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="6" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="18" r="2"/></svg>
+          </button>
+        </div>
+        <div class="expanded-player-header-right">
+          <button class="expanded-player-close" id="expandedPlayerClose" title="Close">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="expanded-player-body">
+        <div class="expanded-player-sidebar" id="expandedPlayerSidebar">
+          <div class="expanded-player-sidebar-tabs">
+            <button class="sidebar-tab active" data-tab="queue">Next in Queue</button>
+            <button class="sidebar-tab" data-tab="lyrics">Lyrics</button>
+          </div>
+          <div class="sidebar-panel" id="sidebarQueuePanel"></div>
+          <div class="sidebar-panel" id="sidebarLyricsPanel" style="display:none;"></div>
+        </div>
+        <div class="expanded-player-main" id="expandedPlayerMain">
+          <div class="expanded-player-center">
+            <div class="expanded-player-poster" id="expandedPlayerPoster"></div>
+            <div class="expanded-player-info">
+              <div class="expanded-player-title" id="expandedPlayerTitle"></div>
+              <div class="expanded-player-subtitle" id="expandedPlayerSubtitle"></div>
+            </div>
+            <div class="expanded-player-controls">
+              <div class="expanded-controls-row">
+                <div class="expanded-control-buttons">
+                  <button class="expanded-ctrl-btn" id="expandedPrevBtn">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+                  </button>
+                  <button class="expanded-ctrl-btn expanded-play-pause" id="expandedPlayPauseBtn">
+                    <svg viewBox="0 0 24 24" fill="currentColor" class="play-icon"><path d="M8 5v14l11-7z"/></svg>
+                    <svg viewBox="0 0 24 24" fill="currentColor" class="pause-icon" style="display:none;"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                  </button>
+                  <button class="expanded-ctrl-btn" id="expandedNextBtn">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+                  </button>
+                </div>
+                <div class="expanded-player-extras">
+                  <button class="expanded-ctrl-btn" id="expandedLikeBtn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                  </button>
+                  <button class="expanded-ctrl-btn" id="expandedShuffleBtn">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
+                  </button>
+                  <button class="expanded-ctrl-btn" id="expandedRepeatBtn">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>
+                  </button>
+                </div>
+              </div>
+              <div class="expanded-progress-container">
+                <span class="expanded-time" id="expandedCurrentTime">0:00</span>
+                <div class="expanded-progress-bar" id="expandedProgressBar">
+                  <div class="expanded-progress-fill" id="expandedProgressFill"></div>
+                </div>
+                <span class="expanded-time" id="expandedTotalTime">0:00</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script src="script.js"></script>
+    <script src="album.js"></script>
+    <script src="artist.js"></script>
+    <script src="search.js"></script>
 </body>
 </html>

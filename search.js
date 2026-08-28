@@ -23,12 +23,19 @@ function showSearchResultsPage(query) {
     }
 
     const matchedSongs = songs.filter(s => s.title.toLowerCase().includes(query) || s.artist.toLowerCase().includes(query));
+    const seen = new Set();
+    const uniqueSongs = matchedSongs.filter(s => {
+        const key = s.title.toLowerCase() + '|' + s.artist.toLowerCase();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
     const matchedAlbums = albums.filter(a => a.title.toLowerCase().includes(query) || a.artist.toLowerCase().includes(query));
     const matchedArtists = artists.filter(a => a.name.toLowerCase().includes(query));
 
     function renderSongs() {
-        if (!matchedSongs.length) return '<div style="padding: 16px; color: var(--text-muted); text-align: center;">No songs found</div>';
-        return matchedSongs.map(song => {
+        if (!uniqueSongs.length) return '<div style="padding: 16px; color: var(--text-muted); text-align: center;">No songs found</div>';
+        return uniqueSongs.map(song => {
             const cover = getAlbumCoverForSong(song);
             const coverHtml = cover
                 ? `<img src="${cover}" alt="${song.album}" style="width:100%;height:100%;object-fit:cover;border-radius:4px;">`

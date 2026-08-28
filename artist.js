@@ -10,8 +10,8 @@ const singlesMap = {
         {title: "One Of The Girls", year: "2024", type: "single"}
     ],
      9: [160, 161, 162, 163, 98, 164, 104],
-    10: [110, 111, 112, 113, 114, 115],
-    11: [
+     10: [68, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84],
+     11: [
         {title: "ALAMBRE PúA", year: "2025", type: "single", explicit: true},
         {title: "PIToRRO DE COCO", year: "2024", type: "single", explicit: true},
         {title: "EL CLúB", year: "2024", type: "single", explicit: true},
@@ -44,9 +44,9 @@ function renderArtistDetail() {
     const popularSongsMap = {
         1: [1, 90, 94, 86, 25, 87, 88, 91, 92, 93, 22, 24, 89, 27, 95, 18],
         9: [38, 39, 40, 41, 42, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106],
-        10: [110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125],
+        10: [66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81],
         11: [127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142],
-        12: [144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159]
+        12: [29, 30, 31, 32, 33, 34, 35, 36, 37, 153, 154, 155, 156, 157, 158, 159]
     };
 
     const popularSongIds = popularSongsMap[artistId] || artistSongs.slice(0, 16).map(s => s.id);
@@ -293,11 +293,10 @@ function artistPlaySong(songId) {
     if (!song) return;
 
     currentPlayingSongId = songId;
-    currentPlaylist = 'artist';
-    const artist = artists.find(a => a.id === window.artistPageId);
-    const artistSongs = songs.filter(s => s.artist === artist?.name);
-    currentQueue = artistSongs.map(s => s.id);
-    currentSongIndex = currentQueue.indexOf(songId);
+    resetShuffle();
+    currentPlaylist = null;
+    currentQueue = [songId];
+    currentSongIndex = 0;
 
     loadSong(song);
     playAudio();
