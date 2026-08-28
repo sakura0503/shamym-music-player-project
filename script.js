@@ -260,9 +260,18 @@ if (!recentlyPlayed.length) {
     recentlyPlayed = [1, 2, 3, 4, 5];
 }
 let likedSongs = JSON.parse(localStorage.getItem('likedSongs')) || [];
+let likedSongsTimestamps = JSON.parse(localStorage.getItem('likedSongsTimestamps')) || {};
 let userPlaylists = JSON.parse(localStorage.getItem('userPlaylists')) || [];
+
+if (likedSongs.length && !Object.keys(likedSongsTimestamps).length) {
+    const now = Date.now();
+    likedSongs.forEach((id, index) => {
+        likedSongsTimestamps[id] = now - (likedSongs.length - 1 - index) * 60000;
+    });
+}
 let currentPlaylist = null;
 let currentSongIndex = -1;
+let currentPlayingSongId = null;
 let isPlaying = false;
 let shuffle = false;
 let repeat = 0;
@@ -277,6 +286,7 @@ const pages = {};
 const homePage = document.getElementById('homePage');
 const libraryPage = document.getElementById('libraryPage');
 const playlistPage = document.getElementById('playlistPage');
+const likedMusicPage = document.getElementById('likedMusicPage');
 const discoverPage = document.getElementById('discoverPage');
 const albumPage = document.getElementById('albumPage');
 const artistPage = document.getElementById('artistPage');
@@ -285,6 +295,7 @@ const contentArea = document.getElementById('contentArea');
 if (homePage) pages.home = homePage;
 if (libraryPage) pages.library = libraryPage;
 if (playlistPage) pages.playlist = playlistPage;
+if (likedMusicPage) pages.likedMusic = likedMusicPage;
 if (discoverPage) pages.discover = discoverPage;
 if (albumPage) pages.album = albumPage;
 if (artistPage) pages.artist = artistPage;
@@ -319,6 +330,7 @@ const repeatBtn = document.getElementById('repeatBtn');
 function saveState() {
     localStorage.setItem('recentlyPlayed', JSON.stringify(recentlyPlayed));
     localStorage.setItem('likedSongs', JSON.stringify(likedSongs));
+    localStorage.setItem('likedSongsTimestamps', JSON.stringify(likedSongsTimestamps));
     localStorage.setItem('userPlaylists', JSON.stringify(userPlaylists));
 }
 
@@ -550,12 +562,20 @@ function isLiked(songId) {
 function toggleLike(songId) {
     if (isLiked(songId)) {
         likedSongs = likedSongs.filter(id => id !== songId);
+        delete likedSongsTimestamps[songId];
     } else {
         likedSongs.push(songId);
+        likedSongsTimestamps[songId] = Date.now();
     }
     saveState();
     renderLibraryPage();
-    if (currentPlaylist === 'liked') renderPlaylistDetail('liked');
+    if (currentPlaylist === 'liked') {
+        renderPlaylistDetail('liked');
+        const likedMusicPageEl = document.getElementById('likedMusicPage');
+        if (likedMusicPageEl && likedMusicPageEl.classList.contains('active')) {
+            renderLikedMusicPage();
+        }
+    }
 }
 
 function getSongById(id) {
@@ -569,7 +589,12 @@ function getAlbumSongs(albumId) {
 }
 
 function getPlaylistSongs(playlistName) {
-    if (playlistName === 'liked') return likedSongs.map(id => getSongById(id)).filter(Boolean);
+    if (playlistName === 'liked') {
+        return likedSongs
+            .map(id => getSongById(id))
+            .filter(Boolean)
+            .sort((a, b) => (likedSongsTimestamps[b.id] || 0) - (likedSongsTimestamps[a.id] || 0));
+    }
     const pl = userPlaylists.find(p => p.name === playlistName);
     if (!pl) return [];
     return pl.songs.map(id => getSongById(id)).filter(Boolean);
@@ -775,37 +800,176 @@ function renderLibraryPage() {
 }
 
 function renderPlaylistDetail(playlistName) {
-    const isLiked = playlistName === 'liked';
-    const title = isLiked ? 'Liked Music' : playlistName;
+    const isLikedPage = playlistName === 'liked';
     const plSongs = getPlaylistSongs(playlistName);
     
-    let html = `<h2 class="section-title">${title}</h2>`;
-    if (plSongs.length > 0) {
-        html += '<div class="song-list">';
+    if (!playlistDetail) {
+        console.error('playlistDetail element not found');
+        return;
+    }
+    
+    if (isLikedPage) {
+        const totalDuration = typeof getTotalDuration === 'function' ? getTotalDuration(plSongs) : '';
+        let html = `
+            <div class="album-header">
+                <div class="album-header-img">
+                    <div style="width:100%;height:100%;background: linear-gradient(135deg, #4d694e, #2d4a2e);display:flex;align-items:center;justify-content:center;border-radius:8px;">
+                        <svg viewBox="0 0 24 24" width="48" height="48" fill="white"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                    </div>
+                </div>
+                <div class="album-header-info">
+                    <div class="album-header-title">Liked Music</div>
+                    <div class="album-header-desc">${plSongs.length} songs &bull; ${totalDuration}</div>
+                    <div class="album-header-actions">
+                        <button class="album-action-btn" onclick="playLikedSongs()">
+                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                            Play
+                        </button>
+                        <button class="album-action-btn album-shuffle-btn" onclick="shuffleLikedSongs()">
+                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
+                            Shuffle
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="album-songs-header">
+                <div class="album-song-num">#</div>
+                <div class="album-song-title">Title</div>
+                <div class="album-song-date-added">Date Added</div>
+                <div class="album-song-duration">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+                </div>
+            </div>
+            <div class="album-songs">
+        `;
+        
         plSongs.forEach((song, index) => {
-            const cover = getAlbumCoverForSong(song);
-            const coverHtml = cover
-                ? `<img src="${cover}" alt="${song.album}" style="width:100%;height:100%;object-fit:cover;border-radius:4px;">`
-                : `<div style="width:100%;height:100%;background: linear-gradient(135deg, ${song.color}, #333);display:flex;align-items:center;justify-content:center;border-radius:4px;color:#fff;font-weight:600;font-size:0.75rem;">${song.title.substring(0, 2).toUpperCase()}</div>`;
+            const isPlaying = song.id === currentPlayingSongId;
+            const liked = isLiked(song.id);
+            const dateAdded = likedSongsTimestamps[song.id] ? formatDateAdded(likedSongsTimestamps[song.id]) : '';
             html += `
-                <div class="song-row" onclick="playSong(${song.id}, '${playlistName}')">
-                    <div class="song-row-num">${index + 1}</div>
-                    <div class="song-row-img">
-                        ${coverHtml}
+                <div class="album-song-row ${isPlaying ? 'playing' : ''}" onclick="playSong(${song.id}, 'liked')">
+                    <div class="album-song-num">
+                        ${isPlaying ? '<svg class="playing-icon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>' : index + 1}
                     </div>
-                    <div class="song-row-info">
-                        <div class="song-row-title">${song.title}</div>
-                        <div class="song-row-artist">${song.artist}</div>
+                    <div class="album-song-title">
+                        <span class="title-text">${song.title}</span>
+                        <span class="song-artist">• ${song.artist}</span>
                     </div>
-                    <div class="song-row-duration">${song.duration}</div>
+                    <div class="album-song-date-added">${dateAdded}</div>
+                    <div class="album-song-duration">
+                        <span class="like-icon ${liked ? 'liked' : ''}" onclick="toggleLike(${song.id}); event.stopPropagation();">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="${liked ? 'var(--accent)' : 'none'}" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                        </span>
+                        <span class="duration-text">${song.duration}</span>
+                        <span class="song-menu" onclick="event.stopPropagation(); showCardContextMenu(this, 'song', ${song.id});">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><circle cx="6" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18" cy="12" r="2"/></svg>
+                        </span>
+                    </div>
                 </div>
             `;
         });
+        
         html += '</div>';
+        playlistDetail.innerHTML = html;
     } else {
-        html += '<div style="color: var(--text-muted); padding: 16px;">No songs in this playlist yet.</div>';
+        const title = playlistName;
+        let html = `<h2 class="section-title">${title}</h2>`;
+        if (plSongs.length > 0) {
+            html += '<div class="song-list">';
+            plSongs.forEach((song, index) => {
+                const cover = getAlbumCoverForSong(song);
+                const coverHtml = cover
+                    ? `<img src="${cover}" alt="${song.album}" style="width:100%;height:100%;object-fit:cover;border-radius:4px;">`
+                    : `<div style="width:100%;height:100%;background: linear-gradient(135deg, ${song.color}, #333);display:flex;align-items:center;justify-content:center;border-radius:4px;color:#fff;font-weight:600;font-size:0.75rem;">${song.title.substring(0, 2).toUpperCase()}</div>`;
+                html += `
+                    <div class="song-row" onclick="playSong(${song.id}, '${playlistName}')">
+                        <div class="song-row-num">${index + 1}</div>
+                        <div class="song-row-img">
+                            ${coverHtml}
+                        </div>
+                        <div class="song-row-info">
+                            <div class="song-row-title">${song.title}</div>
+                            <div class="song-row-artist">${song.artist}</div>
+                        </div>
+                        <div class="song-row-duration">${song.duration}</div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+        } else {
+            html += '<div style="color: var(--text-muted); padding: 16px;">No songs in this playlist yet.</div>';
+        }
+        playlistDetail.innerHTML = html;
     }
-    playlistDetail.innerHTML = html;
+}
+
+function renderLikedMusicPage() {
+    const likedDetail = document.getElementById('likedDetail');
+    if (!likedDetail) return;
+    
+    const plSongs = getPlaylistSongs('liked');
+    const totalDuration = typeof getTotalDuration === 'function' ? getTotalDuration(plSongs) : '';
+    let html = `
+        <div class="album-header">
+            <div class="album-header-img">
+                <img src="liked-music.jpg" alt="Liked Music" style="width:100%;height:100%;object-fit:cover;border-radius:8px;">
+            </div>
+            <div class="album-header-info">
+                <div class="album-header-title">Liked Music</div>
+                <div class="album-header-desc">${plSongs.length} songs &bull; ${totalDuration}</div>
+                <div class="album-header-actions">
+                    <button class="album-action-btn" onclick="playLikedSongs()">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                        Play
+                    </button>
+                    <button class="album-action-btn album-shuffle-btn" onclick="shuffleLikedSongs()">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
+                        Shuffle
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="album-songs-header">
+            <div class="album-song-num">#</div>
+            <div class="album-song-title">Title</div>
+            <div class="album-song-date-added">Date Added</div>
+            <div class="album-song-duration">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+            </div>
+        </div>
+        <div class="album-songs">
+    `;
+    
+    plSongs.forEach((song, index) => {
+        const isPlaying = song.id === currentPlayingSongId;
+        const liked = isLiked(song.id);
+        const dateAdded = likedSongsTimestamps[song.id] ? formatDateAdded(likedSongsTimestamps[song.id]) : '';
+        html += `
+            <div class="album-song-row ${isPlaying ? 'playing' : ''}" onclick="playSong(${song.id}, 'liked')">
+                <div class="album-song-num">
+                    ${isPlaying ? '<svg class="playing-icon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>' : index + 1}
+                </div>
+                <div class="album-song-title">
+                    <span class="title-text">${song.title}</span>
+                    <span class="song-artist">• ${song.artist}</span>
+                </div>
+                <div class="album-song-date-added">${dateAdded}</div>
+                <div class="album-song-duration">
+                    <span class="like-icon ${liked ? 'liked' : ''}" onclick="toggleLike(${song.id}); event.stopPropagation();">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="${liked ? 'var(--accent)' : 'none'}" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                    </span>
+                    <span class="duration-text">${song.duration}</span>
+                    <span class="song-menu" onclick="event.stopPropagation(); showCardContextMenu(this, 'song', ${song.id});">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><circle cx="6" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18" cy="12" r="2"/></svg>
+                    </span>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    likedDetail.innerHTML = html;
 }
 
 function openPlaylist(name) {
@@ -827,6 +991,7 @@ function showPage(pageName) {
     if (pageName === 'discover') renderDiscoverPage();
     if (pageName === 'library') renderLibraryPage();
     if (pageName === 'playlist') renderPlaylistDetail(currentPlaylist || 'liked');
+    if (pageName === 'likedMusic') renderLikedMusicPage();
     if (pageName === 'album') {
         if (typeof renderAlbumPage === 'function') renderAlbumPage();
     }
@@ -903,6 +1068,9 @@ function handleHashChange() {
         const playlistName = parts[1] || 'liked';
         currentPlaylist = playlistName;
         showPage('playlist');
+    } else if (page === 'liked-music') {
+        showPage('likedMusic');
+        renderLikedMusicPage();
     } else if (page === 'album') {
         const albumTitle = decodeURIComponent(parts[1]);
         const album = albums.find(a => a.title === albumTitle);
@@ -1023,6 +1191,46 @@ function playAlbum(albumId) {
     }
 }
 
+function playLikedSongs() {
+    const likedSongsList = getPlaylistSongs('liked');
+    if (likedSongsList.length > 0) {
+        resetShuffle();
+        currentPlaylist = 'liked';
+        currentQueue = likedSongsList.map(s => s.id);
+        currentSongIndex = 0;
+        loadSong(likedSongsList[0]);
+        playAudio();
+        saveAudioState();
+    }
+}
+
+function shuffleLikedSongs() {
+    const likedSongsList = getPlaylistSongs('liked');
+    if (likedSongsList.length > 0) {
+        resetShuffle();
+        currentPlaylist = 'liked';
+        currentQueue = likedSongsList.map(s => s.id);
+        currentSongIndex = 0;
+        loadSong(likedSongsList[0]);
+        playAudio();
+        
+        shuffle = true;
+        originalQueue = currentQueue.slice();
+        applyShuffleToQueue();
+        updateShuffleUI();
+        renderQueuePanel();
+        saveAudioState();
+    }
+}
+
+function formatDateAdded(timestamp) {
+    const date = new Date(timestamp);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
+}
+
 function loadSong(song) {
     currentSong = song;
     playerTrackName.textContent = song.title;
@@ -1071,6 +1279,14 @@ function loadSong(song) {
             }
         }
     }
+    
+    if (currentPlaylist === 'liked') {
+        currentPlayingSongId = song.id;
+        const playlistPageEl = document.getElementById('playlistPage');
+        if (playlistPageEl && playlistPageEl.classList.contains('active')) {
+            renderPlaylistDetail('liked');
+        }
+    }
 }
 
 function playAudio() {
@@ -1111,17 +1327,17 @@ function playAudio() {
                             audio.currentTime = 0;
                         }
                         playAudio();
-                    } else if (isAlbumMode()) {
+                    } else if (isAlbumMode() || currentPlaylist === 'liked') {
                         const list = getCurrentPlaylistSongs();
                         if (repeat === 2) {
                             playNext();
-                         } else if (list.length > 0 && currentSongIndex === list.length - 1) {
-                             pauseAudio();
-                             resetProgress();
-                             saveAudioState();
-                         } else {
-                             playNext();
-                         }
+                        } else if (list.length > 0 && currentSongIndex === list.length - 1) {
+                            pauseAudio();
+                            resetProgress();
+                            saveAudioState();
+                        } else {
+                            playNext();
+                        }
                     } else {
                         pauseAudio();
                         resetProgress();
@@ -1223,7 +1439,12 @@ function getCurrentSong() {
 
 function getCurrentPlaylistSongs() {
     if (currentQueue && currentQueue.length) return currentQueue.map(id => getSongById(id)).filter(Boolean);
-    if (currentPlaylist === 'liked') return likedSongs.map(id => getSongById(id)).filter(Boolean);
+    if (currentPlaylist === 'liked') {
+        return likedSongs
+            .map(id => getSongById(id))
+            .filter(Boolean)
+            .sort((a, b) => (likedSongsTimestamps[b.id] || 0) - (likedSongsTimestamps[a.id] || 0));
+    }
     if (currentPlaylist && currentPlaylist.startsWith('album:')) {
         const albumId = parseInt(currentPlaylist.replace('album:', ''));
         return getAlbumSongs(albumId);
@@ -1322,7 +1543,7 @@ function renderQueuePanel() {
                     <div class="sidebar-list-sub">${song.artist}</div>
                 </div>
                 <div class="sidebar-list-duration">${song.duration}</div>
-                <button class="sidebar-list-menu" onclick="event.stopPropagation(); showCardContextMenu(this, 'song', ${song.id});" title="More options">
+                <button class="sidebar-list-menu" onclick="event.stopPropagation(); showQueueContextMenu(this, ${song.id});" title="More options">
                     <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="6" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18" cy="12" r="2"/></svg>
                 </button>
             </div>
@@ -1811,6 +2032,11 @@ function createCardContextMenu() {
     cardContextMenu = document.createElement('div');
     cardContextMenu.className = 'card-context-menu';
     cardContextMenu.innerHTML = `
+        <div class="context-menu-header">
+            <div class="context-menu-header-title"></div>
+            <div class="context-menu-header-artist"></div>
+            <div class="context-menu-header-date"></div>
+        </div>
         <div class="card-context-menu-item" data-action="play">Play Song</div>
         <div class="card-context-menu-item" data-action="go-to-album">Go to Album</div>
         <div class="card-context-menu-item" data-action="go-to-artist">Go to Artist</div>
@@ -1839,6 +2065,7 @@ function showCardContextMenu(button, type, id, singleObj, artistObj) {
     const playItem = menu.querySelector('[data-action="play"]');
     const goToAlbumItem = menu.querySelector('[data-action="go-to-album"]');
     const goToArtistItem = menu.querySelector('[data-action="go-to-artist"]');
+    const addToLikedItem = menu.querySelector('[data-action="add-to-liked"]');
 
     if (type === 'song') {
         const song = getSongById(id);
@@ -1857,7 +2084,7 @@ function showCardContextMenu(button, type, id, singleObj, artistObj) {
             goToAlbumItem.dataset.href = '';
         }
 
-        const artist = artists.find(a => a.name === targetSong.artist);
+        const artist = getArtistForSong(targetSong);
         const artistPage = artist ? artistPages[artist.id] : null;
         if (artistPage) {
             goToArtistItem.classList.remove('disabled');
@@ -1865,6 +2092,21 @@ function showCardContextMenu(button, type, id, singleObj, artistObj) {
         } else {
             goToArtistItem.classList.add('disabled');
             goToArtistItem.dataset.href = '';
+        }
+
+        const liked = isLiked(targetSong.id);
+        addToLikedItem.textContent = liked ? 'Remove from Liked Music' : 'Add to Liked Music';
+        addToLikedItem.classList.toggle('disabled', false);
+
+        const headerTitle = menu.querySelector('.context-menu-header-title');
+        const headerArtist = menu.querySelector('.context-menu-header-artist');
+        const headerDate = menu.querySelector('.context-menu-header-date');
+        if (headerTitle) headerTitle.textContent = targetSong.title;
+        if (headerArtist) headerArtist.textContent = targetSong.artist;
+        const dateAdded = likedSongsTimestamps[targetSong.id] ? formatDateAdded(likedSongsTimestamps[targetSong.id]) : '';
+        if (headerDate) {
+            headerDate.textContent = dateAdded;
+            headerDate.style.display = dateAdded ? 'block' : 'none';
         }
     } else if (type === 'album') {
         const album = albums.find(a => a.id === id);
@@ -1881,7 +2123,7 @@ function showCardContextMenu(button, type, id, singleObj, artistObj) {
             goToAlbumItem.dataset.href = '';
         }
 
-        const artist = artists.find(a => a.name === album.artist);
+        const artist = getArtistForSong(album);
         const artistPage = artist ? artistPages[artist.id] : null;
         if (artistPage) {
             goToArtistItem.classList.remove('disabled');
@@ -1912,6 +2154,190 @@ function hideCardContextMenu() {
         cardContextMenu.classList.remove('active');
     }
     currentCardData = null;
+}
+
+function getArtistForSong(songOrAlbum) {
+    if (!songOrAlbum || !songOrAlbum.artist) return null;
+    const artistName = songOrAlbum.artist.split(',')[0].trim();
+    return artists.find(a => a.name === artistName);
+}
+
+function showQueueContextMenu(button, songId) {
+    const menu = document.createElement('div');
+    menu.className = 'card-context-menu';
+    menu.innerHTML = `
+        <div class="card-context-menu-item" data-action="go-to-album">Go to Album</div>
+        <div class="card-context-menu-item" data-action="go-to-artist">Go to Artist</div>
+        <div class="card-context-menu-item" data-action="play-next">Play Next</div>
+        <div class="card-context-menu-item" data-action="add-to-liked">Add to Liked Music</div>
+        <div class="card-context-menu-item" data-action="add-to-playlist">Add to Playlist</div>
+        <div class="card-context-menu-item" data-action="download">Download</div>
+        <div class="card-context-menu-item dismiss" data-action="dismiss-queue">Dismiss Queue</div>
+    `;
+    document.body.appendChild(menu);
+
+    const song = getSongById(songId);
+    if (!song) return;
+
+    const goToAlbumItem = menu.querySelector('[data-action="go-to-album"]');
+    const goToArtistItem = menu.querySelector('[data-action="go-to-artist"]');
+
+    const album = albums.find(a => a.title === song.album);
+    const albumPage = album ? albumPages[album.id] : null;
+    if (albumPage) {
+        goToAlbumItem.classList.remove('disabled');
+        goToAlbumItem.dataset.href = albumPage;
+    } else {
+        goToAlbumItem.classList.add('disabled');
+        goToAlbumItem.dataset.href = '';
+    }
+
+    const artist = getArtistForSong(song);
+    const artistPage = artist ? artistPages[artist.id] : null;
+    if (artistPage) {
+        goToArtistItem.classList.remove('disabled');
+        goToArtistItem.dataset.href = artistPage;
+    } else {
+        goToArtistItem.classList.add('disabled');
+        goToArtistItem.dataset.href = '';
+    }
+
+    const addToLikedItem = menu.querySelector('[data-action="add-to-liked"]');
+    const liked = isLiked(songId);
+    addToLikedItem.textContent = liked ? 'Remove from Liked Music' : 'Add to Liked Music';
+    addToLikedItem.classList.remove('disabled');
+
+    const rect = button.getBoundingClientRect();
+    menu.style.left = rect.right + 'px';
+    menu.style.top = rect.top + 'px';
+    menu.classList.add('active');
+
+    const menuWidth = menu.offsetWidth;
+    const menuHeight = menu.offsetHeight;
+    if (rect.right + menuWidth > window.innerWidth) {
+        menu.style.left = (rect.left - menuWidth) + 'px';
+    }
+    if (rect.top + menuHeight > window.innerHeight) {
+        menu.style.top = (rect.bottom - menuHeight) + 'px';
+    }
+
+    menu.addEventListener('click', e => {
+        const item = e.target.closest('.card-context-menu-item');
+        if (!item || item.classList.contains('disabled')) return;
+        const action = item.dataset.action;
+        
+        if (action === 'go-to-album') {
+            const href = item.dataset.href;
+            if (href) navigateTo(href);
+        } else if (action === 'go-to-artist') {
+            const href = item.dataset.href;
+            if (href) navigateTo(href);
+        } else if (action === 'play-next') {
+            currentQueue = [songId, ...currentQueue.filter(id => id !== songId)];
+            currentSongIndex = 0;
+            loadSong(song);
+            playAudio();
+            saveAudioState();
+            renderQueuePanel();
+        } else if (action === 'add-to-liked') {
+            if (isLiked(songId)) {
+                likedSongs = likedSongs.filter(id => id !== songId);
+                delete likedSongsTimestamps[songId];
+            } else {
+                likedSongs.push(songId);
+                likedSongsTimestamps[songId] = Date.now();
+            }
+            saveState();
+            renderLibraryPage();
+            if (currentPlaylist === 'liked') {
+                renderPlaylistDetail('liked');
+                const likedMusicPageEl = document.getElementById('likedMusicPage');
+                if (likedMusicPageEl && likedMusicPageEl.classList.contains('active')) {
+                    renderLikedMusicPage();
+                }
+            }
+            updateLikeButton();
+        } else if (action === 'add-to-playlist') {
+            const name = prompt('Enter playlist name:');
+            if (name && name.trim()) {
+                const pl = userPlaylists.find(p => p.name === name.trim());
+                if (pl) {
+                    if (!pl.songs.includes(songId)) {
+                        pl.songs.push(songId);
+                        saveState();
+                    }
+                } else {
+                    userPlaylists.push({ name: name.trim(), songs: [songId] });
+                    saveState();
+                }
+                updatePlaylistUI();
+            }
+        } else if (action === 'download') {
+            if (song && song.cover) {
+                const a = document.createElement('a');
+                a.href = song.cover;
+                a.download = song.cover.split('/').pop();
+                a.click();
+            }
+        } else if (action === 'dismiss-queue') {
+            if (audio) {
+                audio.pause();
+                audio.currentTime = 0;
+            }
+            currentSong = null;
+            currentPlaylist = null;
+            currentQueue = [];
+            currentSongIndex = 0;
+            currentPlayingSongId = null;
+            audio = null;
+            currentAudioFile = null;
+            stopSilentPlayback();
+            isPlaying = false;
+            shuffle = false;
+            repeat = 0;
+            originalQueue = [];
+
+            playerTrackName.textContent = 'No track playing';
+            playerTrackArtist.textContent = 'Select a song to play';
+            playerImg.removeAttribute('src');
+            playerImg.style.display = 'flex';
+            playerImg.style.background = '';
+            playerImg.style.alignItems = 'center';
+            playerImg.style.justifyContent = 'center';
+            playerImg.style.color = '';
+            playerImg.textContent = '';
+            currentTimeEl.textContent = '0:00';
+            totalTimeEl.textContent = '0:00';
+            progressFill.style.width = '0%';
+
+            const expandedTotalTime = document.getElementById('expandedTotalTime');
+            const expandedCurrentTime = document.getElementById('expandedCurrentTime');
+            const expandedProgressFill = document.getElementById('expandedProgressFill');
+            if (expandedTotalTime) expandedTotalTime.textContent = '0:00';
+            if (expandedCurrentTime) expandedCurrentTime.textContent = '0:00';
+            if (expandedProgressFill) expandedProgressFill.style.width = '0%';
+
+            updatePlayerControlsState();
+            updateRepeatUI();
+            updateShuffleUI();
+            updateLikeButton();
+            saveAudioState();
+            renderQueuePanel();
+            closeExpandedPlayer();
+        }
+        
+        menu.remove();
+    });
+
+    setTimeout(() => {
+        const hideMenu = (e) => {
+            if (!menu.contains(e.target)) {
+                menu.remove();
+                document.removeEventListener('click', hideMenu);
+            }
+        };
+        document.addEventListener('click', hideMenu);
+    }, 10);
 }
 
 function handleCardMenuAction(action) {
@@ -1947,6 +2373,32 @@ function handleCardMenuAction(action) {
         if (href) {
             navigateTo(href);
         }
+    } else if (action === 'add-to-liked') {
+        if (!currentCardData) return;
+        const { type, id, singleObj } = currentCardData;
+        let songId = id;
+        if (type === 'song' && singleObj && !id) {
+            songId = singleObj.id;
+        }
+        if (songId) {
+            if (isLiked(songId)) {
+                likedSongs = likedSongs.filter(id => id !== songId);
+                delete likedSongsTimestamps[songId];
+            } else {
+                likedSongs.push(songId);
+                likedSongsTimestamps[songId] = Date.now();
+            }
+            saveState();
+            renderLibraryPage();
+            if (currentPlaylist === 'liked') {
+                renderPlaylistDetail('liked');
+                const likedMusicPageEl = document.getElementById('likedMusicPage');
+                if (likedMusicPageEl && likedMusicPageEl.classList.contains('active')) {
+                    renderLikedMusicPage();
+                }
+            }
+            updateLikeButton();
+        }
     }
 }
 
@@ -1957,6 +2409,11 @@ function createPlayerContextMenu() {
     playerContextMenu = document.createElement('div');
     playerContextMenu.className = 'player-context-menu';
     playerContextMenu.innerHTML = `
+        <div class="context-menu-header">
+            <div class="context-menu-header-title"></div>
+            <div class="context-menu-header-artist"></div>
+            <div class="context-menu-header-date"></div>
+        </div>
         <div class="player-context-menu-item" data-action="play">Play Song</div>
         <div class="player-context-menu-item" data-action="go-to-album">Go to Album</div>
         <div class="player-context-menu-item" data-action="go-to-artist">Go to Artist</div>
@@ -1986,6 +2443,7 @@ function showPlayerContextMenu(button) {
     const playItem = playerContextMenu.querySelector('[data-action="play"]');
     const goToAlbumItem = playerContextMenu.querySelector('[data-action="go-to-album"]');
     const goToArtistItem = playerContextMenu.querySelector('[data-action="go-to-artist"]');
+    const addToLikedItem = playerContextMenu.querySelector('[data-action="add-to-liked"]');
 
     playItem.textContent = 'Play Song';
     playItem.classList.remove('disabled');
@@ -2000,7 +2458,7 @@ function showPlayerContextMenu(button) {
         goToAlbumItem.dataset.href = '';
     }
 
-    const artist = artists.find(a => a.name === song.artist);
+    const artist = getArtistForSong(song);
     const artistPage = artist ? artistPages[artist.id] : null;
     if (artistPage) {
         goToArtistItem.classList.remove('disabled');
@@ -2008,6 +2466,21 @@ function showPlayerContextMenu(button) {
     } else {
         goToArtistItem.classList.add('disabled');
         goToArtistItem.dataset.href = '';
+    }
+
+    const liked = isLiked(song.id);
+    addToLikedItem.textContent = liked ? 'Remove from Liked Music' : 'Add to Liked Music';
+    addToLikedItem.classList.remove('disabled');
+
+    const headerTitle = playerContextMenu.querySelector('.context-menu-header-title');
+    const headerArtist = playerContextMenu.querySelector('.context-menu-header-artist');
+    const headerDate = playerContextMenu.querySelector('.context-menu-header-date');
+    if (headerTitle) headerTitle.textContent = song.title;
+    if (headerArtist) headerArtist.textContent = song.artist;
+    const dateAdded = likedSongsTimestamps[song.id] ? formatDateAdded(likedSongsTimestamps[song.id]) : '';
+    if (headerDate) {
+        headerDate.textContent = dateAdded;
+        headerDate.style.display = dateAdded ? 'block' : 'none';
     }
 
     const rect = button.getBoundingClientRect();
@@ -2065,8 +2538,14 @@ function handlePlayerMenuAction(action) {
             renderQueuePanel();
         }
     } else if (action === 'add-to-liked') {
-        if (song && !isLiked(song.id)) {
-            likedSongs.push(song.id);
+        if (song) {
+            if (isLiked(song.id)) {
+                likedSongs = likedSongs.filter(id => id !== song.id);
+                delete likedSongsTimestamps[song.id];
+            } else {
+                likedSongs.push(song.id);
+                likedSongsTimestamps[song.id] = Date.now();
+            }
             saveState();
             updateLikeButton();
         }
@@ -2634,6 +3113,8 @@ window.addEventListener('popstate', e => {
 
 window.playSong = playSong;
 window.playAlbum = playAlbum;
+window.playLikedSongs = playLikedSongs;
+window.shuffleLikedSongs = shuffleLikedSongs;
 window.showCardContextMenu = showCardContextMenu;
 window.hideCardContextMenu = hideCardContextMenu;
 window.navigateTo = navigateTo;
@@ -2667,7 +3148,9 @@ document.querySelectorAll('.playlist-item').forEach(item => {
     item.addEventListener('click', e => {
         e.preventDefault();
         const name = item.dataset.playlist;
-        if (name) {
+        if (name === 'liked') {
+            window.location.hash = '#/liked-music';
+        } else if (name) {
             currentPlaylist = name;
             window.location.hash = `#/playlist/${name}`;
         }
