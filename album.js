@@ -4,8 +4,6 @@ function getAlbumSongs(albumId) {
     return album.songs.map(sid => getSongById(sid)).filter(Boolean);
 }
 
-let currentPlayingSongId = null;
-
 function getTotalDuration(songs) {
     let totalSeconds = 0;
     songs.forEach(song => {

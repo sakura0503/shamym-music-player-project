@@ -287,6 +287,7 @@ const homePage = document.getElementById('homePage');
 const libraryPage = document.getElementById('libraryPage');
 const playlistPage = document.getElementById('playlistPage');
 const likedMusicPage = document.getElementById('likedMusicPage');
+const likedAlbumsPage = document.getElementById('likedAlbumsPage');
 const discoverPage = document.getElementById('discoverPage');
 const albumPage = document.getElementById('albumPage');
 const artistPage = document.getElementById('artistPage');
@@ -296,6 +297,7 @@ if (homePage) pages.home = homePage;
 if (libraryPage) pages.library = libraryPage;
 if (playlistPage) pages.playlist = playlistPage;
 if (likedMusicPage) pages.likedMusic = likedMusicPage;
+if (likedAlbumsPage) pages.likedAlbums = likedAlbumsPage;
 if (discoverPage) pages.discover = discoverPage;
 if (albumPage) pages.album = albumPage;
 if (artistPage) pages.artist = artistPage;
@@ -326,6 +328,7 @@ const playerImg = document.getElementById('playerImg');
 const likeBtn = document.getElementById('likeBtn');
 const shuffleBtn = document.getElementById('shuffleBtn');
 const repeatBtn = document.getElementById('repeatBtn');
+const mobilePlayPauseBtn = document.getElementById('mobilePlayPauseBtn');
 
 function saveState() {
     localStorage.setItem('recentlyPlayed', JSON.stringify(recentlyPlayed));
@@ -606,6 +609,35 @@ function getAlbumCoverForSong(song) {
     return null;
 }
 
+function addLongPress(element, callback, duration = 500) {
+    let timer;
+    const start = (e) => {
+        if (e.type === 'touchstart') {
+            if (e.touches.length > 1) return;
+        }
+        timer = setTimeout(() => {
+            callback(e);
+        }, duration);
+    };
+    const cancel = () => {
+        if (timer) {
+            clearTimeout(timer);
+            timer = null;
+        }
+    };
+    element.addEventListener('touchstart', start, { passive: true });
+    element.addEventListener('touchend', cancel);
+    element.addEventListener('touchmove', cancel);
+    element.addEventListener('touchcancel', cancel);
+    element.addEventListener('mousedown', start);
+    element.addEventListener('mouseup', cancel);
+    element.addEventListener('mouseleave', cancel);
+}
+
+function isMobile() {
+    return window.innerWidth <= 768;
+}
+
 function renderCard(song, showPlayBtn = true, queueIds = null) {
     const div = document.createElement('div');
     div.className = 'card-wrapper';
@@ -632,6 +664,17 @@ function renderCard(song, showPlayBtn = true, queueIds = null) {
         e.stopPropagation();
         showCardContextMenu(menuBtn, 'song', song.id);
     });
+    if (isMobile()) {
+        addLongPress(div, () => {
+            menuBtn.classList.add('visible');
+            showCardContextMenu(menuBtn, 'song', song.id);
+        });
+        div.addEventListener('click', (e) => {
+            if (!e.target.closest('.card-menu-btn')) {
+                menuBtn.classList.remove('visible');
+            }
+        });
+    }
     div.addEventListener('click', () => playSong(song.id, null, queueIds));
     return div;
 }
@@ -690,6 +733,17 @@ function renderHorizontalAlbums(containerId, albumIds) {
                 e.stopPropagation();
                 showCardContextMenu(menuBtn, 'album', album.id);
             });
+            if (isMobile()) {
+                addLongPress(div, () => {
+                    menuBtn.classList.add('visible');
+                    showCardContextMenu(menuBtn, 'album', album.id);
+                });
+                div.addEventListener('click', (e) => {
+                    if (!e.target.closest('.card-menu-btn')) {
+                        menuBtn.classList.remove('visible');
+                    }
+                });
+            }
             div.addEventListener('click', () => {
                 const albumPage = albumPages[album.id];
                 if (albumPage) {
@@ -740,62 +794,104 @@ function renderDiscoverPage() {
 
 function renderLibraryPage() {
     libraryContent.innerHTML = '';
-    
-    const likedSection = document.createElement('div');
-    likedSection.innerHTML = '<div class="library-section-title">Liked Music</div>';
-    const likedList = document.createElement('div');
-    likedList.className = 'song-list';
-    likedSongs.forEach((id, index) => {
-        const song = getSongById(id);
-        if (song) {
-            const row = document.createElement('div');
-            row.className = 'song-row';
-            const cover = getAlbumCoverForSong(song);
-            const coverHtml = cover
-                ? `<img src="${cover}" alt="${song.album}" style="width:100%;height:100%;object-fit:cover;border-radius:4px;">`
-                : `<div style="width:100%;height:100%;background: linear-gradient(135deg, ${song.color}, #333);display:flex;align-items:center;justify-content:center;border-radius:4px;color:#fff;font-weight:600;font-size:0.75rem;">${song.title.substring(0, 2).toUpperCase()}</div>`;
-            row.innerHTML = `
-                <div class="song-row-num">${index + 1}</div>
-                <div class="song-row-img">
-                    ${coverHtml}
-                </div>
-                <div class="song-row-info">
-                    <div class="song-row-title">${song.title}</div>
-                    <div class="song-row-artist">${song.artist}</div>
-                </div>
-                <div class="song-row-duration">${song.duration}</div>
-            `;
-            row.addEventListener('click', () => playSong(song.id));
-            likedList.appendChild(row);
+
+    const likedSongsList = getPlaylistSongs('liked');
+    const likedSongsRecent = likedSongsList.slice(0, 5);
+
+    const likedSongsSection = document.createElement('div');
+    likedSongsSection.innerHTML = '<div class="library-section-title">Liked Music</div>';
+    if (likedSongsRecent.length > 0) {
+        const scroll = document.createElement('div');
+        scroll.className = 'horizontal-scroll';
+        const container = document.createElement('div');
+        container.className = 'scroll-container';
+        likedSongsRecent.forEach(song => {
+            container.appendChild(renderCard(song, true, null));
+        });
+        scroll.appendChild(container);
+        likedSongsSection.appendChild(scroll);
+    } else {
+        likedSongsSection.innerHTML += '<div style="color: var(--text-muted); padding: 16px;">No liked songs yet. Start liking songs!</div>';
+    }
+    libraryContent.appendChild(likedSongsSection);
+
+    const likedAlbumsSection = document.createElement('div');
+    likedAlbumsSection.style.marginTop = '24px';
+    likedAlbumsSection.innerHTML = '<div class="library-section-title">Liked Albums</div>';
+
+    const albumLikes = {};
+    likedSongsList.forEach(song => {
+        const album = albums.find(a => a.title === song.album);
+        if (album && likedSongsTimestamps[song.id]) {
+            if (!albumLikes[album.id] || likedSongsTimestamps[song.id] > albumLikes[album.id]) {
+                albumLikes[album.id] = likedSongsTimestamps[song.id];
+            }
         }
     });
-    if (likedSongs.length === 0) {
-        likedList.innerHTML = '<div style="color: var(--text-muted); padding: 16px;">No liked songs yet. Start liking songs!</div>';
+
+    const sortedAlbumIds = Object.keys(albumLikes).sort((a, b) => albumLikes[b] - albumLikes[a]).slice(0, 5);
+    if (sortedAlbumIds.length > 0) {
+        const scroll = document.createElement('div');
+        scroll.className = 'horizontal-scroll';
+        const container = document.createElement('div');
+        container.className = 'scroll-container';
+        sortedAlbumIds.forEach(albumId => {
+            const album = albums.find(a => a.id === parseInt(albumId));
+            if (album) {
+                const div = document.createElement('div');
+                div.className = 'card-wrapper';
+                div.dataset.albumId = album.id;
+                const coverHtml = album.image
+                    ? `<img src="${album.image}" alt="${album.title}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;">`
+                    : `<div style="width:100%;height:100%;background: linear-gradient(135deg, ${album.color}, #333);display:flex;align-items:center;justify-content:center;border-radius:6px;color:#fff;font-weight:600;">${album.title.substring(0, 2).toUpperCase()}</div>`;
+                div.innerHTML = `
+                    <div class="card">
+                        <div class="card-img">
+                            ${coverHtml}
+                        </div>
+                        <div class="card-title">${album.title}</div>
+                        <div class="card-subtitle">${album.artist} - ${album.year}</div>
+                    </div>
+                `;
+                div.addEventListener('click', () => {
+                    const albumPage = albumPages[album.id];
+                    if (albumPage) {
+                        navigateTo(albumPage);
+                    } else {
+                        playAlbum(album.id);
+                    }
+                });
+                container.appendChild(div);
+            }
+        });
+        scroll.appendChild(container);
+        likedAlbumsSection.appendChild(scroll);
+    } else {
+        likedAlbumsSection.innerHTML += '<div style="color: var(--text-muted); padding: 16px;">No liked albums yet. Start liking songs!</div>';
     }
-    likedSection.appendChild(likedList);
-    libraryContent.appendChild(likedSection);
+    libraryContent.appendChild(likedAlbumsSection);
 
     if (userPlaylists.length > 0) {
-        const plSection = document.createElement('div');
-        plSection.innerHTML = '<div class="library-section-title" style="margin-top: 24px;">Playlists</div>';
-        const plList = document.createElement('div');
-        plList.className = 'song-list';
-        userPlaylists.forEach((pl, index) => {
-            const row = document.createElement('div');
-            row.className = 'song-row';
-            row.innerHTML = `
-                <div class="song-row-img" style="background: linear-gradient(135deg, var(--accent), #333);">&#127925;</div>
-                <div class="song-row-info">
-                    <div class="song-row-title">${pl.name}</div>
-                    <div class="song-row-artist">${pl.songs.length} songs</div>
+        const playlistsSection = document.createElement('div');
+        playlistsSection.style.marginTop = '24px';
+        playlistsSection.innerHTML = '<div class="library-section-title">All Playlists</div>';
+        const grid = document.createElement('div');
+        grid.className = 'library-playlists-grid';
+        userPlaylists.forEach(pl => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.innerHTML = `
+                <div class="card-img" style="background: linear-gradient(135deg, var(--accent), #333);">
+                    <span style="font-size: 2rem; color: #fff;">&#127925;</span>
                 </div>
-                <div class="song-row-duration">${pl.songs.length > 0 ? getPlaylistSongs(pl.name).map(s => s.duration).join(', ') : ''}</div>
+                <div class="card-title">${pl.name}</div>
+                <div class="card-subtitle">${pl.songs.length} songs</div>
             `;
-            row.addEventListener('click', () => openPlaylist(pl.name));
-            plList.appendChild(row);
+            card.addEventListener('click', () => openPlaylist(pl.name));
+            grid.appendChild(card);
         });
-        plSection.appendChild(plList);
-        libraryContent.appendChild(plSection);
+        playlistsSection.appendChild(grid);
+        libraryContent.appendChild(playlistsSection);
     }
 }
 
@@ -872,6 +968,10 @@ function renderPlaylistDetail(playlistName) {
         
         html += '</div>';
         playlistDetail.innerHTML = html;
+        
+        if (isMobile()) {
+            addLongPressListeners();
+        }
     } else {
         const title = playlistName;
         let html = `<h2 class="section-title">${title}</h2>`;
@@ -970,6 +1070,55 @@ function renderLikedMusicPage() {
     
     html += '</div>';
     likedDetail.innerHTML = html;
+    
+    if (isMobile()) {
+        addLongPressListeners();
+    }
+}
+
+function renderLikedAlbumsPage() {
+    const likedAlbumsDetail = document.getElementById('likedAlbumsDetail');
+    if (!likedAlbumsDetail) return;
+
+    const likedSongsList = getPlaylistSongs('liked');
+    const albumLikes = {};
+    likedSongsList.forEach(song => {
+        const album = albums.find(a => a.title === song.album);
+        if (album && likedSongsTimestamps[song.id]) {
+            if (!albumLikes[album.id] || likedSongsTimestamps[song.id] > albumLikes[album.id]) {
+                albumLikes[album.id] = likedSongsTimestamps[song.id];
+            }
+        }
+    });
+
+    const sortedAlbumIds = Object.keys(albumLikes).sort((a, b) => albumLikes[b] - albumLikes[a]);
+    const sortedAlbums = sortedAlbumIds.map(id => albums.find(a => a.id === parseInt(id))).filter(Boolean);
+
+    let html = '<h2 class="page-title">Liked Albums</h2>';
+    if (sortedAlbums.length > 0) {
+        html += '<div class="horizontal-scroll"><div class="scroll-container">';
+        sortedAlbums.forEach(album => {
+            const coverHtml = album.image
+                ? `<img src="${album.image}" alt="${album.title}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;">`
+                : `<div style="width:100%;height:100%;background: linear-gradient(135deg, ${album.color}, #333);display:flex;align-items:center;justify-content:center;border-radius:6px;color:#fff;font-weight:600;">${album.title.substring(0, 2).toUpperCase()}</div>`;
+            const albumPage = albumPages[album.id];
+            html += `
+                <div class="card-wrapper" onclick="${albumPage ? `navigateTo('${albumPage}')` : `playAlbum(${album.id})`}">
+                    <div class="card">
+                        <div class="card-img">
+                            ${coverHtml}
+                        </div>
+                        <div class="card-title">${album.title}</div>
+                        <div class="card-subtitle">${album.artist} - ${album.year}</div>
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div></div>';
+    } else {
+        html += '<div style="color: var(--text-muted); padding: 16px;">No liked albums yet. Start liking songs!</div>';
+    }
+    likedAlbumsDetail.innerHTML = html;
 }
 
 function openPlaylist(name) {
@@ -992,6 +1141,7 @@ function showPage(pageName) {
     if (pageName === 'library') renderLibraryPage();
     if (pageName === 'playlist') renderPlaylistDetail(currentPlaylist || 'liked');
     if (pageName === 'likedMusic') renderLikedMusicPage();
+    if (pageName === 'likedAlbums') renderLikedAlbumsPage();
     if (pageName === 'album') {
         if (typeof renderAlbumPage === 'function') renderAlbumPage();
     }
@@ -1071,6 +1221,9 @@ function handleHashChange() {
     } else if (page === 'liked-music') {
         showPage('likedMusic');
         renderLikedMusicPage();
+    } else if (page === 'liked-albums') {
+        showPage('likedAlbums');
+        renderLikedAlbumsPage();
     } else if (page === 'album') {
         const albumTitle = decodeURIComponent(parts[1]);
         const album = albums.find(a => a.title === albumTitle);
@@ -1223,6 +1376,27 @@ function shuffleLikedSongs() {
     }
 }
 
+function shuffleAlbum(albumId) {
+    const album = albums.find(a => a.id === albumId);
+    if (!album) return;
+    const albumSongs = getAlbumSongs(albumId);
+    if (albumSongs.length > 0) {
+        resetShuffle();
+        currentPlaylist = 'album:' + albumId;
+        currentQueue = albumSongs.map(s => s.id);
+        currentSongIndex = 0;
+        loadSong(albumSongs[0]);
+        playAudio();
+        
+        shuffle = true;
+        originalQueue = currentQueue.slice();
+        applyShuffleToQueue();
+        updateShuffleUI();
+        renderQueuePanel();
+        saveAudioState();
+    }
+}
+
 function formatDateAdded(timestamp) {
     const date = new Date(timestamp);
     const day = String(date.getDate()).padStart(2, '0');
@@ -1300,6 +1474,11 @@ function playAudio() {
         expandedPlayPauseBtn.querySelector('.pause-icon').style.display = 'block';
     }
     
+    if (mobilePlayPauseBtn) {
+        mobilePlayPauseBtn.querySelector('.play-icon').style.display = 'none';
+        mobilePlayPauseBtn.querySelector('.pause-icon').style.display = 'block';
+    }
+    
     if (!currentSong) currentSong = getCurrentSong();
     if (currentSong && currentSong.id) {
         const musicFiles = {
@@ -1369,6 +1548,11 @@ function pauseAudio() {
     if (expandedPlayPauseBtn) {
         expandedPlayPauseBtn.querySelector('.play-icon').style.display = 'block';
         expandedPlayPauseBtn.querySelector('.pause-icon').style.display = 'none';
+    }
+    
+    if (mobilePlayPauseBtn) {
+        mobilePlayPauseBtn.querySelector('.play-icon').style.display = 'block';
+        mobilePlayPauseBtn.querySelector('.pause-icon').style.display = 'none';
     }
     
     if (audio) {
@@ -1494,6 +1678,27 @@ function refreshQueueFromCurrentSource() {
 
 let expandedPlayerOpen = false;
 let sidebarTab = 'queue';
+
+const gradientSets = [
+    { start: '#1a5c30', mid: '#2d7d46', end: '#fff9c4' },
+    { start: '#2d1a5c', mid: '#462d7d', end: '#f0c4ff' },
+    { start: '#5c1a1a', mid: '#7d2d2d', end: '#ffd4c4' },
+    { start: '#1a3d5c', mid: '#2d5d7d', end: '#c4e0ff' },
+    { start: '#5c4a1a', mid: '#7d6a2d', end: '#fff0c4' }
+];
+let gradientIndex = 0;
+
+function updateExpandedGradient() {
+    const expandedPlayer = document.getElementById('expandedPlayer');
+    if (!expandedPlayer) return;
+    const grad = gradientSets[gradientIndex];
+    expandedPlayer.style.setProperty('--grad-start', grad.start);
+    expandedPlayer.style.setProperty('--grad-mid', grad.mid);
+    expandedPlayer.style.setProperty('--grad-end', grad.end);
+    gradientIndex = (gradientIndex + 1) % gradientSets.length;
+}
+
+setInterval(updateExpandedGradient, 4000);
 
 function getLyricsFilename(song) {
     return song.title.replace(/\s+/g, '').replace(/[^a-zA-Z0-9]/g, '') + '-Lyrics.txt';
@@ -1740,6 +1945,13 @@ function updatePlayerControlsState() {
         progressBar.style.pointerEvents = 'auto';
         progressBar.style.opacity = '1';
     }
+    if (mobilePlayPauseBtn) {
+        mobilePlayPauseBtn.style.display = hasSong ? 'flex' : 'none';
+        const mobilePlayIcon = mobilePlayPauseBtn.querySelector('.play-icon');
+        const mobilePauseIcon = mobilePlayPauseBtn.querySelector('.pause-icon');
+        if (mobilePlayIcon) mobilePlayIcon.style.display = isPlaying ? 'none' : 'block';
+        if (mobilePauseIcon) mobilePauseIcon.style.display = isPlaying ? 'block' : 'none';
+    }
     const expandedControls = [expandedPlayPauseBtn, expandedPrevBtn, expandedNextBtn, expandedLikeBtn, expandedShuffleBtn, expandedRepeatBtn];
     expandedControls.forEach(btn => {
         if (!btn) return;
@@ -1828,6 +2040,17 @@ playPauseBtn.addEventListener('click', () => {
         playAudio();
     }
 });
+
+if (mobilePlayPauseBtn) {
+    mobilePlayPauseBtn.addEventListener('click', () => {
+        if (!currentSong) return;
+        if (isPlaying) {
+            pauseAudio();
+        } else {
+            playAudio();
+        }
+    });
+}
 
 nextBtn.addEventListener('click', () => {
     if (!currentSong) return;
@@ -2023,6 +2246,44 @@ document.querySelectorAll('.scroll-btn').forEach(btn => {
         }
     });
 });
+
+function initScrollButtons() {
+    document.querySelectorAll('.scroll-btn').forEach(btn => {
+        if (btn.dataset.initialized) return;
+        btn.dataset.initialized = 'true';
+        btn.addEventListener('click', () => {
+            const container = btn.parentElement.querySelector('.scroll-container');
+            const scrollAmount = 300;
+            if (btn.classList.contains('scroll-left')) {
+                container.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+            } else {
+                container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+            }
+        });
+    });
+}
+
+function addLongPressListeners() {
+    if (!isMobile()) return;
+    document.querySelectorAll('.artist-song-row, .album-song-row').forEach(row => {
+        if (row.dataset.longPressInitialized) return;
+        row.dataset.longPressInitialized = 'true';
+        const menuBtn = row.querySelector('.song-menu');
+        if (!menuBtn) return;
+        addLongPress(row, () => {
+            menuBtn.classList.add('visible');
+            const songId = row.dataset.songId;
+            if (songId) {
+                showCardContextMenu(menuBtn, 'song', parseInt(songId));
+            }
+        });
+        row.addEventListener('click', (e) => {
+            if (!e.target.closest('.song-menu')) {
+                menuBtn.classList.remove('visible');
+            }
+        });
+    });
+}
 
 let cardContextMenu = null;
 let currentCardData = null;
@@ -2228,10 +2489,16 @@ function showQueueContextMenu(button, songId) {
         
         if (action === 'go-to-album') {
             const href = item.dataset.href;
-            if (href) navigateTo(href);
+            if (href) {
+                closeExpandedPlayer();
+                navigateTo(href);
+            }
         } else if (action === 'go-to-artist') {
             const href = item.dataset.href;
-            if (href) navigateTo(href);
+            if (href) {
+                closeExpandedPlayer();
+                navigateTo(href);
+            }
         } else if (action === 'play-next') {
             currentQueue = [songId, ...currentQueue.filter(id => id !== songId)];
             currentSongIndex = 0;
@@ -2514,12 +2781,14 @@ function handlePlayerMenuAction(action) {
         const item = playerContextMenu.querySelector('[data-action="go-to-album"]');
         const href = item.dataset.href;
         if (href) {
+            closeExpandedPlayer();
             navigateTo(href);
         }
     } else if (action === 'go-to-artist') {
         const item = playerContextMenu.querySelector('[data-action="go-to-artist"]');
         const href = item.dataset.href;
         if (href) {
+            closeExpandedPlayer();
             navigateTo(href);
         }
     } else if (action === 'play-next') {
@@ -2699,6 +2968,7 @@ function reinitializeAfterNavigation() {
     const newLikeBtn = document.getElementById('likeBtn');
     const newShuffleBtn = document.getElementById('shuffleBtn');
     const newRepeatBtn = document.getElementById('repeatBtn');
+    const newMobilePlayPauseBtn = document.getElementById('mobilePlayPauseBtn');
     
     if (newMenuBtn) newMenuBtn.addEventListener('click', toggleSidebar);
     if (newCloseSidebar) newCloseSidebar.addEventListener('click', closeSidebarFns);
@@ -2706,6 +2976,16 @@ function reinitializeAfterNavigation() {
     
     if (newPlayPauseBtn) {
         newPlayPauseBtn.addEventListener('click', () => {
+            if (!currentSong) return;
+            if (isPlaying) {
+                pauseAudio();
+            } else {
+                playAudio();
+            }
+        });
+    }
+    if (newMobilePlayPauseBtn) {
+        newMobilePlayPauseBtn.addEventListener('click', () => {
             if (!currentSong) return;
             if (isPlaying) {
                 pauseAudio();
@@ -2954,6 +3234,7 @@ function renderAlbumPage() {
     const artistPage = artistObj ? artistPages[artistObj.id] : null;
     const albumImage = album.image || 'AfterHours-Album.webp';
     const currentPlayingSongId = window.albumCurrentPlayingId;
+    const mobile = isMobile();
     
     let html = `
         <div class="album-header">
@@ -2968,6 +3249,18 @@ function renderAlbumPage() {
                     <span>${album.year}</span>
                 </div>
                 <div class="album-header-desc">${albumSongs.length} songs &bull; ${totalDuration}</div>
+                ${mobile ? `
+                <div class="album-header-actions">
+                    <button class="album-action-btn" onclick="playAlbum(${album.id})">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                        Play
+                    </button>
+                    <button class="album-action-btn album-shuffle-btn" onclick="shuffleAlbum(${album.id})">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
+                        Shuffle
+                    </button>
+                </div>
+                ` : ''}
             </div>
         </div>
         <div class="album-songs-header">
@@ -2982,7 +3275,6 @@ function renderAlbumPage() {
     
     albumSongs.forEach((song, index) => {
         const isPlaying = song.id === currentPlayingSongId;
-        const liked = isLiked(song.id);
         html += `
             <div class="album-song-row ${isPlaying ? 'playing' : ''}" data-song-id="${song.id}" onclick="playSong(${song.id}, 'album:${albumId}')">
                 <div class="album-song-num">
@@ -2990,12 +3282,9 @@ function renderAlbumPage() {
                 </div>
                 <div class="album-song-title">
                     <span class="title-text">${song.title}</span>
-                    <span class="song-artist">• ${song.artist}</span>
+                    <span class="song-artist">${mobile ? '<br>' : ' • '}${song.artist}</span>
                 </div>
                 <div class="album-song-duration">
-                    <span class="like-icon ${liked ? 'liked' : ''}" onclick="toggleLike(${song.id}); event.stopPropagation();">
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="${liked ? 'var(--accent)' : 'none'}" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-                    </span>
                     <span class="duration-text">${song.duration}</span>
                     <span class="song-menu" onclick="event.stopPropagation(); showCardContextMenu(this, 'song', ${song.id});">
                         <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><circle cx="6" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18" cy="12" r="2"/></svg>
@@ -3007,6 +3296,10 @@ function renderAlbumPage() {
     
     html += '</div>';
     container.innerHTML = html;
+    
+    if (mobile) {
+        addLongPressListeners();
+    }
 }
 
 function getTotalDuration(songs) {
@@ -3041,6 +3334,7 @@ function renderArtistPage() {
     const artistSongs = songs.filter(s => s.artist === artist.name);
     const artistAlbums = albums.filter(a => a.artist === artist.name);
     const currentPlayingSongId = window.artistCurrentPlayingId;
+    const mobile = isMobile();
     
     let html = `
         <div class="artist-header">
@@ -3053,34 +3347,76 @@ function renderArtistPage() {
             </div>
         </div>
         <h2 class="section-title">Popular</h2>
-        <div class="artist-songs">
     `;
     
-    artistSongs.slice(0, 10).forEach((song, index) => {
-        const isPlaying = song.id === currentPlayingSongId;
-        const liked = isLiked(song.id);
-        const cover = getAlbumCoverForSong(song);
-        const coverHtml = cover
-            ? `<img src="${cover}" alt="${song.album}" style="width:100%;height:100%;object-fit:cover;border-radius:4px;">`
-            : `<div style="width:100%;height:100%;background: linear-gradient(135deg, ${song.color}, #333);display:flex;align-items:center;justify-content:center;border-radius:4px;color:#fff;font-weight:600;font-size:0.75rem;">${song.title.substring(0, 2).toUpperCase()}</div>`;
+    if (mobile) {
+        html += `
+            <div class="horizontal-scroll">
+                <button class="scroll-btn scroll-left" data-target="artistPopularSongs" data-dir="left">&lt;</button>
+                <div class="scroll-container" id="artistPopularSongs">
+        `;
+        
+        artistSongs.slice(0, 10).forEach((song, index) => {
+            const isPlaying = song.id === currentPlayingSongId;
+            const liked = isLiked(song.id);
+            const cover = getAlbumCoverForSong(song);
+            const coverHtml = cover
+                ? `<img src="${cover}" alt="${song.album}" style="width:100%;height:100%;object-fit:cover;border-radius:4px;">`
+                : `<div style="width:100%;height:100%;background: linear-gradient(135deg, ${song.color}, #333);display:flex;align-items:center;justify-content:center;border-radius:4px;color:#fff;font-weight:600;font-size:0.75rem;">${song.title.substring(0, 2).toUpperCase()}</div>`;
+            
+            html += `
+                <div class="artist-song-row ${isPlaying ? 'playing' : ''}" onclick="playSong(${song.id})" style="flex: 0 0 280px; min-width: 280px;">
+                    <div class="artist-song-num">${index + 1}</div>
+                    <div class="artist-song-img">${coverHtml}</div>
+                    <div class="artist-song-info">
+                        <div class="artist-song-title">${song.title}</div>
+                        <div class="artist-song-album">${song.album}</div>
+                    </div>
+                    <span class="like-icon ${liked ? 'liked' : ''}" onclick="toggleLike(${song.id}); event.stopPropagation();">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="${liked ? 'var(--accent)' : 'none'}" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                    </span>
+                    <span class="artist-song-duration">${song.duration}</span>
+                    <span class="song-menu" onclick="event.stopPropagation(); showCardContextMenu(this, 'song', ${song.id});">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><circle cx="6" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18" cy="12" r="2"/></svg>
+                    </span>
+                </div>
+            `;
+        });
         
         html += `
-            <div class="artist-song-row ${isPlaying ? 'playing' : ''}" onclick="playSong(${song.id})">
-                <div class="artist-song-num">${index + 1}</div>
-                <div class="artist-song-img">${coverHtml}</div>
-                <div class="artist-song-info">
-                    <div class="artist-song-title">${song.title}</div>
-                    <div class="artist-song-album">${song.album}</div>
                 </div>
-                <span class="like-icon ${liked ? 'liked' : ''}" onclick="toggleLike(${song.id}); event.stopPropagation();">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="${liked ? 'var(--accent)' : 'none'}" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-                </span>
-                <span class="artist-song-duration">${song.duration}</span>
+                <button class="scroll-btn scroll-right" data-target="artistPopularSongs" data-dir="right">&gt;</button>
             </div>
         `;
-    });
-    
-    html += '</div>';
+    } else {
+        html += `<div class="artist-songs">`;
+        
+        artistSongs.slice(0, 10).forEach((song, index) => {
+            const isPlaying = song.id === currentPlayingSongId;
+            const liked = isLiked(song.id);
+            const cover = getAlbumCoverForSong(song);
+            const coverHtml = cover
+                ? `<img src="${cover}" alt="${song.album}" style="width:100%;height:100%;object-fit:cover;border-radius:4px;">`
+                : `<div style="width:100%;height:100%;background: linear-gradient(135deg, ${song.color}, #333);display:flex;align-items:center;justify-content:center;border-radius:4px;color:#fff;font-weight:600;font-size:0.75rem;">${song.title.substring(0, 2).toUpperCase()}</div>`;
+            
+            html += `
+                <div class="artist-song-row ${isPlaying ? 'playing' : ''}" onclick="playSong(${song.id})">
+                    <div class="artist-song-num">${index + 1}</div>
+                    <div class="artist-song-img">${coverHtml}</div>
+                    <div class="artist-song-info">
+                        <div class="artist-song-title">${song.title}</div>
+                        <div class="artist-song-album">${song.album}</div>
+                    </div>
+                    <span class="like-icon ${liked ? 'liked' : ''}" onclick="toggleLike(${song.id}); event.stopPropagation();">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="${liked ? 'var(--accent)' : 'none'}" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                    </span>
+                    <span class="artist-song-duration">${song.duration}</span>
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+    }
     
     if (artistAlbums.length > 0) {
         html += '<h2 class="section-title">Albums</h2><div class="artist-albums">';
@@ -3105,6 +3441,11 @@ function renderArtistPage() {
     }
     
     container.innerHTML = html;
+    
+    if (mobile) {
+        initScrollButtons();
+        addLongPressListeners();
+    }
 }
 
 window.addEventListener('popstate', e => {
@@ -3115,9 +3456,11 @@ window.playSong = playSong;
 window.playAlbum = playAlbum;
 window.playLikedSongs = playLikedSongs;
 window.shuffleLikedSongs = shuffleLikedSongs;
+window.shuffleAlbum = shuffleAlbum;
 window.showCardContextMenu = showCardContextMenu;
 window.hideCardContextMenu = hideCardContextMenu;
 window.navigateTo = navigateTo;
+window.renderLikedAlbumsPage = renderLikedAlbumsPage;
 
 if (!window.location.hash || window.location.hash === '#') {
     if (window.artistPageId) {
@@ -3150,6 +3493,8 @@ document.querySelectorAll('.playlist-item').forEach(item => {
         const name = item.dataset.playlist;
         if (name === 'liked') {
             window.location.hash = '#/liked-music';
+        } else if (name === 'liked-albums') {
+            window.location.hash = '#/liked-albums';
         } else if (name) {
             currentPlaylist = name;
             window.location.hash = `#/playlist/${name}`;
