@@ -57,13 +57,17 @@ function renderAlbumDetail() {
                 </div>
                 <div class="album-header-desc">${albumSongs.length} songs &bull; ${totalDuration}</div>
                 <div class="album-header-actions">
-                    <button class="album-action-btn" onclick="playAlbum(${albumId})">
+                    <button class="album-action-btn" onclick="toggleAlbumLike(${albumId})">
+                        ${likedAlbums && likedAlbums.includes(albumId) 
+                            ? `<svg viewBox="0 0 24 24" fill="#1a5c30" style="color:#1a5c30"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>`
+                            : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>`
+                        }
+                    </button>
+                    <button class="album-action-btn album-play-btn" onclick="playAlbum(${albumId})">
                         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                        Play
                     </button>
                     <button class="album-action-btn album-shuffle-btn" onclick="shuffleAlbum(${albumId})">
                         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
-                        Shuffle
                     </button>
                 </div>
             </div>
@@ -94,7 +98,7 @@ function renderAlbumDetail() {
                     <span class="song-artist">• ${song.artist}</span>
                 </div>
                 <div class="album-song-duration">
-                    <span class="like-icon ${liked ? 'liked' : ''}" onclick="toggleAlbumLike(${song.id}, event)">
+                    <span class="like-icon ${liked ? 'liked' : ''}" onclick="toggleSongLike(${song.id}, event)">
                         <svg viewBox="0 0 24 24" width="16" height="16" fill="${liked ? 'var(--accent)' : 'none'}" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
                     </span>
                     <span class="duration-text">${song.duration}</span>
@@ -169,7 +173,7 @@ function updateAlbumLikeButton(songId) {
     likeBtnEl.style.color = liked ? 'var(--accent)' : 'var(--text-secondary)';
 }
 
-function toggleAlbumLike(songId, event) {
+function toggleSongLike(songId, event) {
     if (event) event.stopPropagation();
     if (isLiked(songId)) {
         likedSongs = likedSongs.filter(id => id !== songId);
@@ -181,7 +185,7 @@ function toggleAlbumLike(songId, event) {
     renderAlbumDetail();
 }
 
-window.toggleAlbumLike = toggleAlbumLike;
+window.toggleSongLike = toggleSongLike;
 
 const footerLikeBtn = document.getElementById('likeBtn');
 if (footerLikeBtn) {

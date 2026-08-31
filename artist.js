@@ -73,10 +73,12 @@ function renderArtistDetail() {
         </div>
 
         <h2 class="section-title">Popular Songs</h2>
-        <div class="artist-popular-songs">
-    `;
+        <div class="horizontal-scroll">
+            <button class="scroll-btn scroll-left" id="popularSongsLeft">&lt;</button>
+            <div class="artist-popular-songs" id="popularSongsScroll">
+        `;
 
-    const columns = [[], [], [], []];
+        const columns = [[], [], [], []];
     popularSongs.forEach((song, index) => {
         columns[index % 4].push({ song, index });
     });
@@ -84,8 +86,6 @@ function renderArtistDetail() {
     columns.forEach((col, colIndex) => {
         html += `<div class="artist-popular-songs-col">`;
         col.forEach(({ song, index }) => {
-            const isPlaying = song.id === window.artistCurrentPlayingId;
-            const playIcon = isPlaying ? '&#9646;&#9646;' : '&#9654;';
             const cover = getAlbumCoverForSong(song);
             const coverHtml = cover
                 ? `<img src="${cover}" alt="${song.album}" style="width:100%;height:100%;object-fit:cover;border-radius:4px;">`
@@ -99,7 +99,6 @@ function renderArtistDetail() {
                         <div class="artist-popular-song-title">${song.title}</div>
                         <div class="artist-popular-song-artist">${song.artist}</div>
                     </div>
-                    <button class="artist-popular-song-play" data-song-id="${song.id}">${playIcon}</button>
                     <button class="card-menu-btn" data-type="song" data-id="${song.id}" onclick="event.stopPropagation(); showCardContextMenu(this, 'song', ${song.id});">
                         <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="6" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18" cy="12" r="2"/></svg>
                     </button>
@@ -109,7 +108,9 @@ function renderArtistDetail() {
         html += `</div>`;
     });
 
-    html += `</div>`;
+    html += `</div>
+            <button class="scroll-btn scroll-right" id="popularSongsRight">&gt;</button>
+        </div>`;
 
     html += `<h2 class="section-title">Albums</h2>`;
     html += `<div class="horizontal-scroll">`;
@@ -128,7 +129,8 @@ function renderArtistDetail() {
     const relatedArtists = artists.filter(a => a.id !== artistId && artistPages[a.id]).slice(0, 5);
 
     html += `<h2 class="section-title">You Might Also Like</h2>`;
-    html += `<div class="artist-suggestions">`;
+    html += `<div class="horizontal-scroll">`;
+    html += `<div class="scroll-container" id="artistSuggestionsScroll">`;
 
     relatedArtists.forEach(relArtist => {
         const artistPage = artistPages[relArtist.id];
@@ -143,7 +145,7 @@ function renderArtistDetail() {
         `;
     });
 
-    html += `</div>`;
+    html += `</div></div>`;
 
     container.innerHTML = html;
 
@@ -262,13 +264,13 @@ function renderArtistDetail() {
         });
     });
 
-    container.querySelectorAll('.artist-popular-song-play').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const songId = parseInt(btn.dataset.songId);
-            artistPlaySong(songId);
-        });
-    });
+    const popularSongsScroll = document.getElementById('popularSongsScroll');
+    const popularSongsLeft = document.getElementById('popularSongsLeft');
+    const popularSongsRight = document.getElementById('popularSongsRight');
+    if (popularSongsScroll && popularSongsLeft && popularSongsRight) {
+        popularSongsLeft.addEventListener('click', () => { popularSongsScroll.scrollBy({ left: -200, behavior: 'smooth' }); });
+        popularSongsRight.addEventListener('click', () => { popularSongsScroll.scrollBy({ left: 200, behavior: 'smooth' }); });
+    }
 
     const albumsScroll = document.getElementById('albumsScroll');
     const albumsLeft = document.getElementById('albumsLeft');

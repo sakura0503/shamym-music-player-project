@@ -261,6 +261,7 @@ if (!recentlyPlayed.length) {
 }
 let likedSongs = JSON.parse(localStorage.getItem('likedSongs')) || [];
 let likedSongsTimestamps = JSON.parse(localStorage.getItem('likedSongsTimestamps')) || {};
+let likedAlbums = JSON.parse(localStorage.getItem('likedAlbums')) || [];
 let userPlaylists = JSON.parse(localStorage.getItem('userPlaylists')) || [];
 
 if (likedSongs.length && !Object.keys(likedSongsTimestamps).length) {
@@ -334,6 +335,7 @@ function saveState() {
     localStorage.setItem('recentlyPlayed', JSON.stringify(recentlyPlayed));
     localStorage.setItem('likedSongs', JSON.stringify(likedSongs));
     localStorage.setItem('likedSongsTimestamps', JSON.stringify(likedSongsTimestamps));
+    localStorage.setItem('likedAlbums', JSON.stringify(likedAlbums));
     localStorage.setItem('userPlaylists', JSON.stringify(userPlaylists));
 }
 
@@ -581,6 +583,19 @@ function toggleLike(songId) {
     }
 }
 
+function toggleAlbumLike(albumId) {
+    const index = likedAlbums.indexOf(albumId);
+    if (index > -1) {
+        likedAlbums.splice(index, 1);
+    } else {
+        likedAlbums.unshift(albumId);
+    }
+    localStorage.setItem('likedAlbums', JSON.stringify(likedAlbums));
+    if (typeof renderAlbumDetail === 'function') renderAlbumDetail();
+    if (typeof renderLikedAlbumsPage === 'function') renderLikedAlbumsPage();
+    if (typeof renderLibrary === 'function') renderLibrary();
+}
+
 function getSongById(id) {
     return songs.find(s => s.id === id);
 }
@@ -635,7 +650,7 @@ function addLongPress(element, callback, duration = 500) {
 }
 
 function isMobile() {
-    return window.innerWidth <= 768;
+    return window.innerWidth <= 780;
 }
 
 function renderCard(song, showPlayBtn = true, queueIds = null) {
@@ -819,55 +834,42 @@ function renderLibraryPage() {
     likedAlbumsSection.style.marginTop = '24px';
     likedAlbumsSection.innerHTML = '<div class="library-section-title">Liked Albums</div>';
 
-    const albumLikes = {};
-    likedSongsList.forEach(song => {
-        const album = albums.find(a => a.title === song.album);
-        if (album && likedSongsTimestamps[song.id]) {
-            if (!albumLikes[album.id] || likedSongsTimestamps[song.id] > albumLikes[album.id]) {
-                albumLikes[album.id] = likedSongsTimestamps[song.id];
-            }
-        }
-    });
-
-    const sortedAlbumIds = Object.keys(albumLikes).sort((a, b) => albumLikes[b] - albumLikes[a]).slice(0, 5);
-    if (sortedAlbumIds.length > 0) {
+    const libraryLikedAlbums = likedAlbums.map(id => albums.find(a => a.id === id)).filter(Boolean);
+    if (libraryLikedAlbums.length > 0) {
         const scroll = document.createElement('div');
         scroll.className = 'horizontal-scroll';
         const container = document.createElement('div');
         container.className = 'scroll-container';
-        sortedAlbumIds.forEach(albumId => {
-            const album = albums.find(a => a.id === parseInt(albumId));
-            if (album) {
-                const div = document.createElement('div');
-                div.className = 'card-wrapper';
-                div.dataset.albumId = album.id;
-                const coverHtml = album.image
-                    ? `<img src="${album.image}" alt="${album.title}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;">`
-                    : `<div style="width:100%;height:100%;background: linear-gradient(135deg, ${album.color}, #333);display:flex;align-items:center;justify-content:center;border-radius:6px;color:#fff;font-weight:600;">${album.title.substring(0, 2).toUpperCase()}</div>`;
-                div.innerHTML = `
-                    <div class="card">
-                        <div class="card-img">
-                            ${coverHtml}
-                        </div>
-                        <div class="card-title">${album.title}</div>
-                        <div class="card-subtitle">${album.artist} - ${album.year}</div>
+        libraryLikedAlbums.forEach(album => {
+            const div = document.createElement('div');
+            div.className = 'card-wrapper';
+            div.dataset.albumId = album.id;
+            const coverHtml = album.image
+                ? `<img src="${album.image}" alt="${album.title}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;">`
+                : `<div style="width:100%;height:100%;background: linear-gradient(135deg, ${album.color}, #333);display:flex;align-items:center;justify-content:center;border-radius:6px;color:#fff;font-weight:600;">${album.title.substring(0, 2).toUpperCase()}</div>`;
+            div.innerHTML = `
+                <div class="card">
+                    <div class="card-img">
+                        ${coverHtml}
                     </div>
-                `;
-                div.addEventListener('click', () => {
-                    const albumPage = albumPages[album.id];
-                    if (albumPage) {
-                        navigateTo(albumPage);
-                    } else {
-                        playAlbum(album.id);
-                    }
-                });
-                container.appendChild(div);
-            }
+                    <div class="card-title">${album.title}</div>
+                    <div class="card-subtitle">${album.artist} - ${album.year}</div>
+                </div>
+            `;
+            div.addEventListener('click', () => {
+                const albumPage = albumPages[album.id];
+                if (albumPage) {
+                    navigateTo(albumPage);
+                } else {
+                    playAlbum(album.id);
+                }
+            });
+            container.appendChild(div);
         });
         scroll.appendChild(container);
         likedAlbumsSection.appendChild(scroll);
     } else {
-        likedAlbumsSection.innerHTML += '<div style="color: var(--text-muted); padding: 16px;">No liked albums yet. Start liking songs!</div>';
+        likedAlbumsSection.innerHTML += '<div style="color: var(--text-muted); padding: 16px;">No liked albums yet. Start liking albums!</div>';
     }
     libraryContent.appendChild(likedAlbumsSection);
 
@@ -916,16 +918,14 @@ function renderPlaylistDetail(playlistName) {
                 <div class="album-header-info">
                     <div class="album-header-title">Liked Music</div>
                     <div class="album-header-desc">${plSongs.length} songs &bull; ${totalDuration}</div>
-                    <div class="album-header-actions">
-                        <button class="album-action-btn" onclick="playLikedSongs()">
-                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                            Play
-                        </button>
-                        <button class="album-action-btn album-shuffle-btn" onclick="shuffleLikedSongs()">
-                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
-                            Shuffle
-                        </button>
-                    </div>
+                <div class="album-header-actions">
+                    <button class="album-action-btn album-play-btn" onclick="playLikedSongs()">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                    </button>
+                    <button class="album-action-btn album-shuffle-btn" onclick="shuffleLikedSongs()">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
+                    </button>
+                </div>
                 </div>
             </div>
             <div class="album-songs-header">
@@ -1019,13 +1019,11 @@ function renderLikedMusicPage() {
                 <div class="album-header-title">Liked Music</div>
                 <div class="album-header-desc">${plSongs.length} songs &bull; ${totalDuration}</div>
                 <div class="album-header-actions">
-                    <button class="album-action-btn" onclick="playLikedSongs()">
+                    <button class="album-action-btn album-play-btn" onclick="playLikedSongs()">
                         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                        Play
                     </button>
                     <button class="album-action-btn album-shuffle-btn" onclick="shuffleLikedSongs()">
                         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
-                        Shuffle
                     </button>
                 </div>
             </div>
@@ -1076,27 +1074,52 @@ function renderLikedMusicPage() {
     }
 }
 
+function playLikedAlbums() {
+    if (!likedAlbums.length) return;
+    const album = albums.find(a => a.id === likedAlbums[0]);
+    if (album) playAlbum(album.id);
+}
+
+window.playLikedAlbums = playLikedAlbums;
+
+function shuffleLikedAlbums() {
+    if (!likedAlbums.length) return;
+    const album = albums.find(a => a.id === likedAlbums[Math.floor(Math.random() * likedAlbums.length)]);
+    if (album) playAlbum(album.id);
+}
+
+window.shuffleLikedAlbums = shuffleLikedAlbums;
+
 function renderLikedAlbumsPage() {
     const likedAlbumsDetail = document.getElementById('likedAlbumsDetail');
     if (!likedAlbumsDetail) return;
 
-    const likedSongsList = getPlaylistSongs('liked');
-    const albumLikes = {};
-    likedSongsList.forEach(song => {
-        const album = albums.find(a => a.title === song.album);
-        if (album && likedSongsTimestamps[song.id]) {
-            if (!albumLikes[album.id] || likedSongsTimestamps[song.id] > albumLikes[album.id]) {
-                albumLikes[album.id] = likedSongsTimestamps[song.id];
-            }
-        }
-    });
+    const sortedAlbums = likedAlbums
+        .map(id => albums.find(a => a.id === id))
+        .filter(Boolean);
 
-    const sortedAlbumIds = Object.keys(albumLikes).sort((a, b) => albumLikes[b] - albumLikes[a]);
-    const sortedAlbums = sortedAlbumIds.map(id => albums.find(a => a.id === parseInt(id))).filter(Boolean);
+    let html = `
+        <div class="album-header">
+            <div class="album-header-img">
+                <img src="liked-albums.jpg" alt="Liked Albums" style="width:100%;height:100%;object-fit:cover;border-radius:8px;">
+            </div>
+            <div class="album-header-info">
+                <div class="album-header-title">Liked Albums</div>
+                <div class="album-header-desc">${sortedAlbums.length} albums</div>
+                <div class="album-header-actions">
+                    <button class="album-action-btn album-play-btn" onclick="playLikedAlbums()">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                    </button>
+                    <button class="album-action-btn album-shuffle-btn" onclick="shuffleLikedAlbums()">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
 
-    let html = '<h2 class="page-title">Liked Albums</h2>';
     if (sortedAlbums.length > 0) {
-        html += '<div class="horizontal-scroll"><div class="scroll-container">';
+        html += '<div class="liked-albums-grid">';
         sortedAlbums.forEach(album => {
             const coverHtml = album.image
                 ? `<img src="${album.image}" alt="${album.title}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;">`
@@ -1114,9 +1137,9 @@ function renderLikedAlbumsPage() {
                 </div>
             `;
         });
-        html += '</div></div>';
+        html += '</div>';
     } else {
-        html += '<div style="color: var(--text-muted); padding: 16px;">No liked albums yet. Start liking songs!</div>';
+        html += '<div style="color: var(--text-muted); padding: 16px;">No liked albums yet. Start liking albums!</div>';
     }
     likedAlbumsDetail.innerHTML = html;
 }
@@ -1272,7 +1295,7 @@ if (createPlaylistBtn) {
 }
 
 function updatePlaylistUI() {
-    const existingItems = playlistContainer.querySelectorAll('.playlist-item:not([data-playlist="liked"])');
+    const existingItems = playlistContainer.querySelectorAll('.playlist-item:not([data-playlist="liked"]):not([data-playlist="liked-albums"])');
     existingItems.forEach(item => item.remove());
     userPlaylists.forEach(pl => {
         const a = document.createElement('a');
@@ -1679,32 +1702,22 @@ function refreshQueueFromCurrentSource() {
 let expandedPlayerOpen = false;
 let sidebarTab = 'queue';
 
-const gradientSets = [
-    { start: '#1a5c30', mid: '#2d7d46', end: '#fff9c4' },
-    { start: '#2d1a5c', mid: '#462d7d', end: '#f0c4ff' },
-    { start: '#5c1a1a', mid: '#7d2d2d', end: '#ffd4c4' },
-    { start: '#1a3d5c', mid: '#2d5d7d', end: '#c4e0ff' },
-    { start: '#5c4a1a', mid: '#7d6a2d', end: '#fff0c4' }
-];
-let gradientIndex = 0;
+// Expanded player gradient handled entirely via CSS now.
 
-function updateExpandedGradient() {
-    const expandedPlayer = document.getElementById('expandedPlayer');
-    if (!expandedPlayer) return;
-    const grad = gradientSets[gradientIndex];
-    expandedPlayer.style.setProperty('--grad-start', grad.start);
-    expandedPlayer.style.setProperty('--grad-mid', grad.mid);
-    expandedPlayer.style.setProperty('--grad-end', grad.end);
-    gradientIndex = (gradientIndex + 1) % gradientSets.length;
-}
-
-setInterval(updateExpandedGradient, 4000);
+const lyricsData = {
+    1: `Yeah<br><br>I've been tryna call<br><br>I've been on my own for long enough<br><br>Maybe you can show me how to love, maybe<br><br>I'm goin' through withdrawals<br><br>You don't even have to do too much<br><br>You can turn me on with just a touch, baby<br><br>I look around and<br><br>Sin City's cold and empty (Oh)<br><br>No one's around to judge me (Oh)<br><br>I can't see clearly when you're gone<br><br>I said, ooh, I'm blinded by the lights<br><br>No, I can't sleep until I feel your touch (Touch)<br><br>I said, ooh, I'm drowning in the night<br><br>Oh, when I'm like this, you're the one I trust<br><br>Hey, hey, hey<br><br>I'm running out of time<br><br>'Cause I can see the sun light up the sky<br><br>So I hit the road in overdrive, baby, oh<br><br>The city's cold and empty (Oh)<br><br>No one's around to judge me (Oh)<br><br>I can't see clearly when you're gone<br><br>And I said, ooh, I'm blinded by the lights<br><br>No, I can't sleep until I feel your touch (Touch)<br><br>I said, ooh, I'm drowning in the night<br><br>Oh, when I'm like this, you're the one I trust<br><br>I'm just coming back to let you know (Back to let you know)<br><br>I could never say it on the phone (Say it on the phone)<br><br>Will never let you go this time (Ooh)<br><br>I said, ooh, I'm blinded by the lights<br><br>No, I can't sleep until I feel your touch (Touch)<br><br>Hey, hey, hey<br><br>Hey, hey, hey<br><br>I said, ooh, I'm blinded by the lights<br><br>No, I can't sleep until I feel your touch`,
+    59: `Aún quedan dos botellas de vino, de vino<br><br>Por si se juntan nuestro' camino', camino'<br><br>Y no hay que encontrar el atardecer<br><br>Hay mucho de mí que te faltó conocer<br><br>Si la vida me da de nuevo el placer<br><br>Voy a volverte a besar como aquella ve' que el sol se escondió<br><br>Mientras la noche llegaba<br><br>No sé qué sucedió pero me perdí en tu mirada<br><br>Eh, eh, eh, eh<br><br>Oh, oh, mami, dime por qué te fuistе<br><br>Ey, ey, oh, oh, mami, dime qué tú me hicistе<br><br>Que pasa el tiempo y no te olvido<br><br>Búscame, ya estoy vestido<br><br>Hoy sí o sí yo me quedo en un cuarto que no es mío<br><br>Déjame acariciarte hasta quedarno' dormido'<br><br>Yo haciéndote cosas nueva' y tú improvisando gemido'<br><br>Eh, eh, eh, eh<br><br>Tú a mí me gusta' más que el dinero, eh, eh, eh<br><br>Quiero que te vengas tú primero<br><br>A vece' me pregunto qué será de tu vida<br><br>Ojalá un día de estos me escriba'<br><br>Babe, you know I'm thinking 'bout you<br><br>These days, 'cause I've been thinking 'bout you<br><br>Vamo' suavecito, me besa' tan bien<br><br>Empieza en mi ombligo, termina en mis pies<br><br>Beni, no te olvido<br><br>Yo te digo, no te fallaré<br><br>No sé qué te hizo<br><br>Pero yo nunca te dejaré<br><br>Y no hay que encontrar el atardecer<br><br>Hay mucho de mí que te faltó conocer<br><br>Si la vida me da de nuevo el placer<br><br>Voy a volverte a besar como aquella ve' que el sol se escondió<br><br>Mientras la noche llegaba<br><br>No sé qué sucedió pero me perdí en tu mirada (Mirada)`,
+    99: `Dance, my babe<br><br>Dance, my friends<br><br>We don't have much time to enjoy<br><br>Just sing it, my babe<br><br>Bigger than you ever did<br><br>We don't have much time to enjoy<br><br>Our time will be gone someday<br><br>But I'm okay<br><br>Life's like surfin' anyway<br><br>We surf like plankton<br><br>We surf outside the waves<br><br>We surf like a jellyfish<br><br>We surf outside the waves, side the waves<br><br>My body is full of salt<br><br>Trying to wash it away<br><br>But you know my time is always<br><br>So sweet with you<br><br>Oh, I'm never gonna leavе<br><br>'Cause you know<br><br>The life is likе surfin' anyway<br><br>We surf like plankton<br><br>We surf outside the waves<br><br>We surf like a jellyfish<br><br>We surf outside the waves, side the waves`
+};
 
 function getLyricsFilename(song) {
     return song.title.replace(/\s+/g, '').replace(/[^a-zA-Z0-9]/g, '') + '-Lyrics.txt';
 }
 
 async function loadLyrics(song) {
+    if (lyricsData[song.id]) {
+        return lyricsData[song.id];
+    }
     const filename = getLyricsFilename(song);
     try {
         const response = await fetch(filename);
@@ -1946,7 +1959,7 @@ function updatePlayerControlsState() {
         progressBar.style.opacity = '1';
     }
     if (mobilePlayPauseBtn) {
-        mobilePlayPauseBtn.style.display = hasSong ? 'flex' : 'none';
+        mobilePlayPauseBtn.style.display = (hasSong && isMobile()) ? 'flex' : 'none';
         const mobilePlayIcon = mobilePlayPauseBtn.querySelector('.play-icon');
         const mobilePauseIcon = mobilePlayPauseBtn.querySelector('.pause-icon');
         if (mobilePlayIcon) mobilePlayIcon.style.display = isPlaying ? 'none' : 'block';
@@ -2032,7 +2045,8 @@ function updateRepeatUI() {
     });
 }
 
-playPauseBtn.addEventListener('click', () => {
+playPauseBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
     if (!currentSong) return;
     if (isPlaying) {
         pauseAudio();
@@ -2042,7 +2056,8 @@ playPauseBtn.addEventListener('click', () => {
 });
 
 if (mobilePlayPauseBtn) {
-    mobilePlayPauseBtn.addEventListener('click', () => {
+    mobilePlayPauseBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
         if (!currentSong) return;
         if (isPlaying) {
             pauseAudio();
@@ -2052,17 +2067,20 @@ if (mobilePlayPauseBtn) {
     });
 }
 
-nextBtn.addEventListener('click', () => {
+nextBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
     if (!currentSong) return;
     playNext();
 });
 
-prevBtn.addEventListener('click', () => {
+prevBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
     if (!currentSong) return;
     playPrev();
 });
 
 progressBar.addEventListener('click', e => {
+    e.stopPropagation();
     if (!currentSong) return;
     const rect = progressBar.getBoundingClientRect();
     const percent = (e.clientX - rect.left) / rect.width;
@@ -2075,7 +2093,8 @@ progressBar.addEventListener('click', e => {
     }
 });
 
-likeBtn.addEventListener('click', () => {
+likeBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
     if (!currentSong) return;
     const song = getCurrentSong();
     if (song) {
@@ -2084,7 +2103,8 @@ likeBtn.addEventListener('click', () => {
     }
 });
 
-shuffleBtn.addEventListener('click', () => {
+shuffleBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
     if (!currentSong) return;
     shuffle = !shuffle;
     if (shuffle) {
@@ -2097,7 +2117,8 @@ shuffleBtn.addEventListener('click', () => {
     saveAudioState();
 });
 
-repeatBtn.addEventListener('click', () => {
+repeatBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
     if (!currentSong) return;
     repeat = (repeat + 1) % 3;
     updateRepeatUI();
@@ -3251,13 +3272,17 @@ function renderAlbumPage() {
                 <div class="album-header-desc">${albumSongs.length} songs &bull; ${totalDuration}</div>
                 ${mobile ? `
                 <div class="album-header-actions">
-                    <button class="album-action-btn" onclick="playAlbum(${album.id})">
+                    <button class="album-action-btn" onclick="toggleAlbumLike(${album.id})">
+                        ${likedAlbums && likedAlbums.includes(album.id) 
+                            ? `<svg viewBox="0 0 24 24" fill="#1a5c30" style="color:#1a5c30"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>`
+                            : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>`
+                        }
+                    </button>
+                    <button class="album-action-btn album-play-btn" onclick="playAlbum(${album.id})">
                         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                        Play
                     </button>
                     <button class="album-action-btn album-shuffle-btn" onclick="shuffleAlbum(${album.id})">
                         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
-                        Shuffle
                     </button>
                 </div>
                 ` : ''}
@@ -3506,6 +3531,7 @@ const nowPlaying = document.getElementById('nowPlaying');
 if (nowPlaying) {
     nowPlaying.addEventListener('click', e => {
         if (e.target.closest('.ctrl-btn')) return;
+        if (e.target.closest('#playPauseBtn')) return;
         toggleExpandedPlayer();
     });
 }
@@ -3514,8 +3540,10 @@ const playerBar = document.getElementById('playerBar');
 if (playerBar) {
     playerBar.addEventListener('click', e => {
         if (e.target.closest('.ctrl-btn')) return;
+        if (e.target.closest('#playPauseBtn')) return;
         if (e.target.closest('#nowPlaying')) return;
         if (e.target.closest('.progress-container')) return;
+        if (e.target.closest('.player-controls')) return;
         toggleExpandedPlayer();
     });
 }
