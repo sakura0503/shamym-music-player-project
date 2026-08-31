@@ -1218,8 +1218,8 @@ body {
 }
 
 .album-action-btn.album-play-btn {
-    background: #1a5c30;
-    color: white;
+    background: #c8e6c9;
+    color: #1a5c30;
 }
 
 .album-action-btn:hover {
@@ -1232,23 +1232,29 @@ body {
 }
 
 .album-action-btn svg {
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
+}
+
+#likedMusicPage .album-header-actions .album-action-btn,
+#albumDetail .album-header-actions .album-action-btn {
+    width: 40px;
+    height: 40px;
 }
 
 .album-shuffle-btn {
     background: #fff9c4;
-    color: black;
+    color: #1a5c30;
 }
 
 #likedMusicPage .album-header-actions .album-play-btn {
-    background: #fff9c4;
-    color: black;
+    background: #c8e6c9;
+    color: #1a5c30;
 }
 
 #likedMusicPage .album-header-actions .album-shuffle-btn {
-    background: #1a5c30;
-    color: white;
+    background: #c8e6c9;
+    color: #1a5c30;
 }
 
 .album-songs-header {
@@ -2609,10 +2615,6 @@ body {
     .card-menu-btn.visible,
     .song-menu.visible {
         display: flex !important;
-    }
-
-    #albumDetail .album-song-row .like-icon {
-        display: none;
     }
 
     #albumDetail .album-song-title {

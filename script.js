@@ -958,9 +958,6 @@ function renderPlaylistDetail(playlistName) {
                             <svg viewBox="0 0 24 24" width="16" height="16" fill="${liked ? 'var(--accent)' : 'none'}" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
                         </span>
                         <span class="duration-text">${song.duration}</span>
-                        <span class="song-menu" onclick="event.stopPropagation(); showCardContextMenu(this, 'song', ${song.id});">
-                            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><circle cx="6" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18" cy="12" r="2"/></svg>
-                        </span>
                     </div>
                 </div>
             `;
@@ -1054,16 +1051,13 @@ function renderLikedMusicPage() {
                 </div>
                 <div class="album-song-date-added">${dateAdded}</div>
                 <div class="album-song-duration">
-                    <span class="like-icon ${liked ? 'liked' : ''}" onclick="toggleLike(${song.id}); event.stopPropagation();">
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="${liked ? 'var(--accent)' : 'none'}" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-                    </span>
-                    <span class="duration-text">${song.duration}</span>
-                    <span class="song-menu" onclick="event.stopPropagation(); showCardContextMenu(this, 'song', ${song.id});">
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><circle cx="6" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18" cy="12" r="2"/></svg>
-                    </span>
+                        <span class="like-icon ${liked ? 'liked' : ''}" onclick="toggleLike(${song.id}); event.stopPropagation();">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="${liked ? 'var(--accent)' : 'none'}" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                        </span>
+                        <span class="duration-text">${song.duration}</span>
+                    </div>
                 </div>
-            </div>
-        `;
+            `;
     });
     
     html += '</div>';
@@ -1106,14 +1100,6 @@ function renderLikedAlbumsPage() {
             <div class="album-header-info">
                 <div class="album-header-title">Liked Albums</div>
                 <div class="album-header-desc">${sortedAlbums.length} albums</div>
-                <div class="album-header-actions">
-                    <button class="album-action-btn album-play-btn" onclick="playLikedAlbums()">
-                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                    </button>
-                    <button class="album-action-btn album-shuffle-btn" onclick="shuffleLikedAlbums()">
-                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
-                    </button>
-                </div>
             </div>
         </div>
     `;
@@ -2289,20 +2275,24 @@ function addLongPressListeners() {
     document.querySelectorAll('.artist-song-row, .album-song-row').forEach(row => {
         if (row.dataset.longPressInitialized) return;
         row.dataset.longPressInitialized = 'true';
+        const songId = row.dataset.songId;
+        if (!songId) return;
         const menuBtn = row.querySelector('.song-menu');
-        if (!menuBtn) return;
         addLongPress(row, () => {
-            menuBtn.classList.add('visible');
-            const songId = row.dataset.songId;
-            if (songId) {
+            if (menuBtn) {
+                menuBtn.classList.add('visible');
                 showCardContextMenu(menuBtn, 'song', parseInt(songId));
+            } else {
+                showCardContextMenu(row, 'song', parseInt(songId));
             }
         });
-        row.addEventListener('click', (e) => {
-            if (!e.target.closest('.song-menu')) {
-                menuBtn.classList.remove('visible');
-            }
-        });
+        if (menuBtn) {
+            row.addEventListener('click', (e) => {
+                if (!e.target.closest('.song-menu')) {
+                    menuBtn.classList.remove('visible');
+                }
+            });
+        }
     });
 }
 
@@ -3275,7 +3265,7 @@ function renderAlbumPage() {
                     <button class="album-action-btn" onclick="toggleAlbumLike(${album.id})">
                         ${likedAlbums && likedAlbums.includes(album.id) 
                             ? `<svg viewBox="0 0 24 24" fill="#1a5c30" style="color:#1a5c30"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>`
-                            : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>`
+                            : `<svg viewBox="0 0 24 24" fill="none" stroke="#1a5c30" stroke-width="2"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>`
                         }
                     </button>
                     <button class="album-action-btn album-play-btn" onclick="playAlbum(${album.id})">
