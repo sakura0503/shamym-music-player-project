@@ -502,6 +502,7 @@ body {
     justify-content: center;
     color: var(--text-muted);
     font-size: 0.8rem;
+    overflow: visible;
 }
 
 .card-play-btn {
@@ -515,7 +516,8 @@ body {
 .card-wrapper {
     position: relative;
     flex: 0 0 160px;
-    overflow: hidden;
+    min-width: 160px;
+    overflow: visible;
 }
 
 .card-title {
@@ -553,6 +555,7 @@ body {
 
 .artist-card {
     flex: 0 0 160px;
+    min-width: 160px;
     text-align: center;
     padding: 24px 16px;
 }
@@ -1354,7 +1357,7 @@ body {
     align-items: center;
     gap: 8px;
     justify-content: flex-start;
-    min-width: 110px;
+    min-width: 140px;
 }
 
 .album-song-date-added {
@@ -1387,14 +1390,24 @@ body {
 }
 
 .song-menu {
-    opacity: 0;
     transition: opacity 0.2s;
     display: flex;
     align-items: center;
     color: var(--text-secondary);
     cursor: pointer;
-    order: 3;
     margin-left: auto;
+    opacity: 1;
+    visibility: visible;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    padding: 2px;
+    border-radius: 4px;
+}
+
+.song-menu:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
 }
 
 .search-result-page-item {
@@ -1435,14 +1448,11 @@ body {
     height: 28px;
     border-radius: 50%;
     border: none;
-    background: rgba(0, 0, 0, 0.3);
-    color: #fff;
     cursor: pointer;
-    display: flex;
+    display: none;
     align-items: center;
     justify-content: center;
-    opacity: 0;
-    transition: opacity 0.2s, background 0.2s;
+    transition: background 0.2s;
     z-index: 10;
     padding: 0;
 }
@@ -1467,9 +1477,28 @@ body {
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
     padding: 8px 0;
     min-width: 200px;
+    max-height: 300px;
+    overflow-y: auto;
     z-index: 2000;
     display: none;
     border: 1px solid var(--border);
+}
+
+.card-context-menu::-webkit-scrollbar {
+    width: 6px;
+}
+
+.card-context-menu::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.card-context-menu::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 3px;
+}
+
+.card-context-menu::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
 }
 
 .card-context-menu.active {
@@ -1941,14 +1970,6 @@ body {
 
     .liked-albums-grid {
         grid-template-columns: repeat(3, 1fr);
-    }
-
-    .album-song-row .song-menu {
-        display: none;
-    }
-
-    .album-song-row .song-menu.visible {
-        display: flex;
     }
 }
 
@@ -2581,7 +2602,8 @@ body {
 
         .mobile-controls-below {
             display: flex;
-            justify-content: flex-end;
+            justify-content: center;
+            align-self: center;
             gap: 16px;
             padding: 8px 16px 0;
         }
@@ -2642,15 +2664,31 @@ body {
     .artist-header-meta {
         font-size: 0.85rem;
     }
+}
 
-    .card-menu-btn,
-    .song-menu {
+@media (max-width: 480px) {
+    .card-menu-btn {
         display: none !important;
     }
 
-    .card-menu-btn.visible,
+    .song-menu {
+        opacity: 0;
+    }
+
+    .album-song-row:hover .song-menu {
+        opacity: 1;
+    }
+
     .song-menu.visible {
-        display: flex !important;
+        opacity: 1;
+    }
+
+    .album-song-row .song-menu {
+        display: none;
+    }
+
+    .album-song-row .song-menu.visible {
+        display: flex;
     }
 
     #albumDetail .album-song-title {

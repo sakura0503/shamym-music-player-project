@@ -670,7 +670,6 @@ function renderCard(song, showPlayBtn = true, queueIds = null) {
             <div class="card-subtitle">${song.artist}</div>
             ${showPlayBtn ? `<button class="card-play-btn" onclick="event.stopPropagation(); playSong(${song.id}, null, ${queueIds ? JSON.stringify(queueIds) : 'null'})">&#9654;</button>` : ''}
             <button class="card-menu-btn" data-type="song" data-id="${song.id}" onclick="event.stopPropagation();">
-                <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="6" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18" cy="12" r="2"/></svg>
             </button>
         </div>
     `;
@@ -691,6 +690,10 @@ function renderCard(song, showPlayBtn = true, queueIds = null) {
         });
     }
     div.addEventListener('click', () => playSong(song.id, null, queueIds));
+    div.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        showCardContextMenu(menuBtn, 'song', song.id, null, null, e.clientX, e.clientY);
+    });
     return div;
 }
 
@@ -739,7 +742,6 @@ function renderHorizontalAlbums(containerId, albumIds) {
                     <div class="card-subtitle">${album.artist} - ${album.year}</div>
                     <button class="card-play-btn" onclick="event.stopPropagation(); playAlbum(${album.id})">&#9654;</button>
                     <button class="card-menu-btn" data-type="album" data-id="${album.id}" onclick="event.stopPropagation();">
-                        <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="6" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18" cy="12" r="2"/></svg>
                     </button>
                 </div>
             `;
@@ -766,6 +768,10 @@ function renderHorizontalAlbums(containerId, albumIds) {
                 } else {
                     playAlbum(album.id);
                 }
+            });
+            div.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                showCardContextMenu(menuBtn, 'album', album.id, null, null, e.clientX, e.clientY);
             });
             container.appendChild(div);
         }
@@ -944,7 +950,7 @@ function renderPlaylistDetail(playlistName) {
             const liked = isLiked(song.id);
             const dateAdded = likedSongsTimestamps[song.id] ? formatDateAdded(likedSongsTimestamps[song.id]) : '';
             html += `
-                <div class="album-song-row ${isPlaying ? 'playing' : ''}" onclick="playSong(${song.id}, 'liked')">
+            <div class="album-song-row ${isPlaying ? 'playing' : ''}" data-song-id="${song.id}" onclick="playSong(${song.id}, 'liked')">
                     <div class="album-song-num">
                         ${isPlaying ? '<svg class="playing-icon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>' : index + 1}
                     </div>
@@ -980,7 +986,7 @@ function renderPlaylistDetail(playlistName) {
                     ? `<img src="${cover}" alt="${song.album}" style="width:100%;height:100%;object-fit:cover;border-radius:4px;">`
                     : `<div style="width:100%;height:100%;background: linear-gradient(135deg, ${song.color}, #333);display:flex;align-items:center;justify-content:center;border-radius:4px;color:#fff;font-weight:600;font-size:0.75rem;">${song.title.substring(0, 2).toUpperCase()}</div>`;
                 html += `
-                    <div class="song-row" onclick="playSong(${song.id}, '${playlistName}')">
+                    <div class="song-row" data-song-id="${song.id}" onclick="playSong(${song.id}, '${playlistName}')">
                         <div class="song-row-num">${index + 1}</div>
                         <div class="song-row-img">
                             ${coverHtml}
@@ -998,6 +1004,16 @@ function renderPlaylistDetail(playlistName) {
             html += '<div style="color: var(--text-muted); padding: 16px;">No songs in this playlist yet.</div>';
         }
         playlistDetail.innerHTML = html;
+        
+        playlistDetail.querySelectorAll('.song-row').forEach(row => {
+            row.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                const songId = parseInt(row.dataset.songId);
+                if (!isNaN(songId)) {
+                    showCardContextMenu(row, 'song', songId, null, null, e.clientX, e.clientY);
+                }
+            });
+        });
     }
 }
 
@@ -1041,7 +1057,7 @@ function renderLikedMusicPage() {
         const liked = isLiked(song.id);
         const dateAdded = likedSongsTimestamps[song.id] ? formatDateAdded(likedSongsTimestamps[song.id]) : '';
         html += `
-            <div class="album-song-row ${isPlaying ? 'playing' : ''}" onclick="playSong(${song.id}, 'liked')">
+            <div class="album-song-row ${isPlaying ? 'playing' : ''}" data-song-id="${song.id}" onclick="playSong(${song.id}, 'liked')">
                 <div class="album-song-num">
                     ${isPlaying ? '<svg class="playing-icon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>' : index + 1}
                 </div>
@@ -1062,6 +1078,16 @@ function renderLikedMusicPage() {
     
     html += '</div>';
     likedDetail.innerHTML = html;
+    
+    likedDetail.querySelectorAll('.album-song-row').forEach(row => {
+        row.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            const songId = parseInt(row.dataset.songId);
+            if (!isNaN(songId)) {
+                showCardContextMenu(row, 'song', songId, null, null, e.clientX, e.clientY);
+            }
+        });
+    });
     
     if (isMobile()) {
         addLongPressListeners();
@@ -1112,7 +1138,7 @@ function renderLikedAlbumsPage() {
                 : `<div style="width:100%;height:100%;background: linear-gradient(135deg, ${album.color}, #333);display:flex;align-items:center;justify-content:center;border-radius:6px;color:#fff;font-weight:600;">${album.title.substring(0, 2).toUpperCase()}</div>`;
             const albumPage = albumPages[album.id];
             html += `
-                <div class="card-wrapper" onclick="${albumPage ? `navigateTo('${albumPage}')` : `playAlbum(${album.id})`}">
+                <div class="card-wrapper" data-id="${album.id}" onclick="${albumPage ? `navigateTo('${albumPage}')` : `playAlbum(${album.id})`}">
                     <div class="card">
                         <div class="card-img">
                             ${coverHtml}
@@ -1128,6 +1154,16 @@ function renderLikedAlbumsPage() {
         html += '<div style="color: var(--text-muted); padding: 16px;">No liked albums yet. Start liking albums!</div>';
     }
     likedAlbumsDetail.innerHTML = html;
+    
+    likedAlbumsDetail.querySelectorAll('.card-wrapper').forEach(wrapper => {
+        wrapper.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            const albumId = parseInt(wrapper.dataset.id);
+            if (!isNaN(albumId)) {
+                showCardContextMenu(wrapper, 'album', albumId, null, null, e.clientX, e.clientY);
+            }
+        });
+    });
 }
 
 function openPlaylist(name) {
@@ -2353,7 +2389,7 @@ function createCardContextMenu() {
     });
 }
 
-function showCardContextMenu(button, type, id, singleObj, artistObj) {
+function showCardContextMenu(button, type, id, singleObj, artistObj, mouseX, mouseY) {
     if (!cardContextMenu) createCardContextMenu();
     currentCardData = { type, id, singleObj, artistObj };
 
@@ -2430,18 +2466,33 @@ function showCardContextMenu(button, type, id, singleObj, artistObj) {
         }
     }
 
-    const rect = button.getBoundingClientRect();
-    menu.style.left = rect.right + 'px';
-    menu.style.top = rect.top + 'px';
-    menu.classList.add('active');
+    if (mouseX !== undefined && mouseY !== undefined) {
+        menu.style.left = mouseX + 'px';
+        menu.style.top = mouseY + 'px';
+        menu.classList.add('active');
 
-    const menuWidth = menu.offsetWidth;
-    const menuHeight = menu.offsetHeight;
-    if (rect.right + menuWidth > window.innerWidth) {
-        menu.style.left = (rect.left - menuWidth) + 'px';
-    }
-    if (rect.top + menuHeight > window.innerHeight) {
-        menu.style.top = (rect.bottom - menuHeight) + 'px';
+        const menuWidth = menu.offsetWidth;
+        const menuHeight = menu.offsetHeight;
+        if (mouseX + menuWidth > window.innerWidth) {
+            menu.style.left = (mouseX - menuWidth) + 'px';
+        }
+        if (mouseY + menuHeight > window.innerHeight) {
+            menu.style.top = (window.innerHeight - menuHeight - 10) + 'px';
+        }
+    } else {
+        const rect = button.getBoundingClientRect();
+        menu.style.left = rect.right + 'px';
+        menu.style.top = rect.top + 'px';
+        menu.classList.add('active');
+
+        const menuWidth = menu.offsetWidth;
+        const menuHeight = menu.offsetHeight;
+        if (rect.right + menuWidth > window.innerWidth) {
+            menu.style.left = (rect.left - menuWidth) + 'px';
+        }
+        if (rect.top + menuHeight > window.innerHeight) {
+            menu.style.top = (window.innerHeight - menuHeight - 10) + 'px';
+        }
     }
 }
 
@@ -2918,7 +2969,31 @@ document.addEventListener('contextmenu', e => {
             showPlayerContextMenu(menuBtn);
         }
     }
-});
+    
+    const songRow = e.target.closest('.album-song-row');
+    if (songRow) {
+        e.preventDefault();
+        const songId = parseInt(songRow.dataset.songId);
+        if (!isNaN(songId)) {
+            showCardContextMenu(songRow, 'song', songId, null, null, e.clientX, e.clientY);
+        }
+        return;
+    }
+    
+    const card = e.target.closest('.card');
+    if (card) {
+        const menuBtn = card.querySelector('.card-menu-btn');
+        if (menuBtn) {
+            e.preventDefault();
+            const type = menuBtn.dataset.type || 'song';
+            const id = parseInt(menuBtn.dataset.id);
+            if (!isNaN(id)) {
+                showCardContextMenu(menuBtn, type, id, null, null, e.clientX, e.clientY);
+            }
+        }
+        return;
+    }
+}, true);
 
 const playerMenuBtn = document.getElementById('playerMenuBtn');
 if (playerMenuBtn) {
@@ -3326,7 +3401,6 @@ function renderAlbumPage() {
                 <div class="album-song-duration">
                     <span class="duration-text">${song.duration}</span>
                     <span class="song-menu" onclick="event.stopPropagation(); showCardContextMenu(this, 'song', ${song.id});">
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><circle cx="6" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18" cy="12" r="2"/></svg>
                     </span>
                 </div>
             </div>
@@ -3335,6 +3409,16 @@ function renderAlbumPage() {
     
     html += '</div>';
     container.innerHTML = html;
+    
+    container.querySelectorAll('.album-song-row').forEach(row => {
+        row.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            const songId = parseInt(row.dataset.songId);
+            if (!isNaN(songId)) {
+                showCardContextMenu(row, 'song', songId, null, null, e.clientX, e.clientY);
+            }
+        });
+    });
     
     if (mobile) {
         addLongPressListeners();
