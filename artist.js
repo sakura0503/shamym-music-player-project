@@ -258,10 +258,36 @@ function renderArtistDetail() {
     });
 
     container.querySelectorAll('.artist-popular-song').forEach(row => {
+        const songId = parseInt(row.dataset.songId);
+        const menuBtn = row.querySelector('.card-menu-btn');
+
         row.addEventListener('click', () => {
-            const songId = parseInt(row.dataset.songId);
-            artistPlaySong(songId);
+            if (!isNaN(songId)) {
+                artistPlaySong(songId);
+            }
         });
+
+        row.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            if (!isNaN(songId)) {
+                showCardContextMenu(menuBtn || row, 'song', songId, null, null, e.clientX, e.clientY);
+            }
+        });
+
+        if (isMobile()) {
+            addLongPress(row, () => {
+                if (menuBtn) menuBtn.classList.add('visible');
+                const rect = row.getBoundingClientRect();
+                const clientX = Math.min(rect.left + rect.width / 2, window.innerWidth - 110);
+                const clientY = Math.max(rect.top - 10, 10);
+                showCardContextMenu(menuBtn || row, 'song', songId, null, null, clientX, clientY);
+            });
+            row.addEventListener('click', (e) => {
+                if (!e.target.closest('.card-menu-btn')) {
+                    if (menuBtn) menuBtn.classList.remove('visible');
+                }
+            });
+        }
     });
 
     const popularSongsScroll = document.getElementById('popularSongsScroll');

@@ -2394,6 +2394,7 @@ function createCardContextMenu() {
 }
 
 function showCardContextMenu(button, type, id, singleObj, artistObj, mouseX, mouseY) {
+    console.log('showCardContextMenu called:', type, id, mouseX, mouseY);
     if (!cardContextMenu) createCardContextMenu();
     currentCardData = { type, id, singleObj, artistObj };
 
@@ -2411,7 +2412,6 @@ function showCardContextMenu(button, type, id, singleObj, artistObj, mouseX, mou
             playItem.classList.remove('disabled');
             goToAlbumItem.classList.add('disabled');
             goToArtistItem.classList.add('disabled');
-            const addToLikedItem = menu.querySelector('[data-action="add-to-liked"]');
             if (addToLikedItem) addToLikedItem.classList.add('disabled');
         } else {
             playItem.textContent = 'Play Song';
@@ -2491,12 +2491,17 @@ function showCardContextMenu(button, type, id, singleObj, artistObj, mouseX, mou
     }
 
     if (mouseX !== undefined && mouseY !== undefined) {
+        console.log('Positioning menu at:', mouseX, mouseY);
         menu.style.left = mouseX + 'px';
         menu.style.top = mouseY + 'px';
         menu.classList.add('active');
+        console.log('Menu classList:', menu.classList.toString());
+        console.log('Menu display:', getComputedStyle(menu).display);
+        console.log('Menu innerHTML:', menu.innerHTML.substring(0, 200));
 
         const menuWidth = menu.offsetWidth;
         const menuHeight = menu.offsetHeight;
+        console.log('Menu dimensions:', menuWidth, menuHeight);
         if (mouseX + menuWidth > window.innerWidth) {
             menu.style.left = (mouseX - menuWidth) + 'px';
         }
@@ -3018,6 +3023,7 @@ document.addEventListener('contextmenu', e => {
     if (artistSongRow) {
         e.preventDefault();
         const songId = parseInt(artistSongRow.dataset.songId);
+        console.log('Document contextmenu - artist song row, songId:', songId);
         if (!isNaN(songId)) {
             showCardContextMenu(artistSongRow, 'song', songId, null, null, e.clientX, e.clientY);
         }
@@ -3038,14 +3044,6 @@ document.addEventListener('contextmenu', e => {
         return;
     }
 }, true);
-
-const playerMenuBtn = document.getElementById('playerMenuBtn');
-if (playerMenuBtn) {
-    playerMenuBtn.addEventListener('click', e => {
-        e.stopPropagation();
-        showPlayerContextMenu(playerMenuBtn);
-    });
-}
 
 const expandedPlayerMenu = document.getElementById('expandedPlayerMenu');
 if (expandedPlayerMenu) {
@@ -3491,6 +3489,7 @@ function getTotalDuration(songs) {
 }
 
 function renderArtistPage() {
+    console.log('renderArtistPage called');
     const artistId = window.artistPageId || 1;
     const artist = artists.find(a => a.id === artistId);
     if (!artist) return;
@@ -3607,6 +3606,32 @@ function renderArtistPage() {
     }
     
     container.innerHTML = html;
+    
+    const artistSongRows = container.querySelectorAll('.artist-song-row');
+    console.log('Found artist-song-row elements:', artistSongRows.length);
+    
+    artistSongRows.forEach(row => {
+        row.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            const songId = parseInt(row.dataset.songId);
+            console.log('Right-click on artist song row, songId:', songId);
+            if (!isNaN(songId)) {
+                showCardContextMenu(row, 'song', songId, null, null, e.clientX, e.clientY);
+            }
+        });
+        if (mobile) {
+            addLongPress(row, () => {
+                const songId = parseInt(row.dataset.songId);
+                console.log('Long press on artist song row, songId:', songId);
+                if (!isNaN(songId)) {
+                    const rect = row.getBoundingClientRect();
+                    const clientX = Math.min(rect.left + rect.width / 2, window.innerWidth - 110);
+                    const clientY = Math.max(rect.top - 10, 10);
+                    showCardContextMenu(row, 'song', songId, null, null, clientX, clientY);
+                }
+            });
+        }
+    });
     
     if (mobile) {
         initScrollButtons();

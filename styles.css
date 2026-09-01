@@ -1403,6 +1403,7 @@ body {
     flex-shrink: 0;
     padding: 2px;
     border-radius: 4px;
+    background: rgba(0, 0, 0, 0.1);
 }
 
 .song-menu:hover {
@@ -1433,10 +1434,17 @@ body {
     right: 4px;
     transform: translateY(-50%);
     opacity: 0;
+    display: none;
     transition: opacity 0.2s, background 0.2s;
 }
 
 .artist-popular-song:hover .card-menu-btn {
+    opacity: 1;
+    display: flex;
+}
+
+.card-menu-btn.visible {
+    display: flex !important;
     opacity: 1;
 }
 
@@ -1479,9 +1487,13 @@ body {
     min-width: 200px;
     max-height: 300px;
     overflow-y: auto;
-    z-index: 2000;
+    z-index: 9999;
     display: none;
     border: 1px solid var(--border);
+}
+
+.card-context-menu.active {
+    display: block;
 }
 
 .card-context-menu::-webkit-scrollbar {
@@ -2710,6 +2722,13 @@ body {
 
     #likedMusicPage .album-song-duration {
         gap: 4px;
+        min-width: auto;
+        justify-content: flex-end;
+    }
+
+    #albumDetail .album-song-duration {
+        min-width: auto;
+        justify-content: flex-end;
     }
 
     .library-playlists-grid {
