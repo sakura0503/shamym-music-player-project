@@ -2342,11 +2342,14 @@ function addLongPressListeners() {
         const id = menuBtn ? parseInt(menuBtn.dataset.id) : parseInt(songId);
         if (isNaN(id)) return;
         addLongPress(row, () => {
+            const rect = row.getBoundingClientRect();
+            const clientX = rect.left + rect.width / 2;
+            const clientY = rect.top;
             if (menuBtn) {
                 menuBtn.classList.add('visible');
-                showCardContextMenu(menuBtn, type, id);
+                showCardContextMenu(menuBtn, type, id, null, null, clientX, clientY);
             } else {
-                showCardContextMenu(row, type, id);
+                showCardContextMenu(row, type, id, null, null, clientX, clientY);
             }
         });
         if (menuBtn) {
@@ -2472,6 +2475,13 @@ function showCardContextMenu(button, type, id, singleObj, artistObj, mouseX, mou
         
         const header = menu.querySelector('.context-menu-header');
         if (header) header.style.display = 'none';
+        
+        const addToLikedItem = menu.querySelector('[data-action="add-to-liked"]');
+        if (addToLikedItem) {
+            const isLiked = likedAlbums && likedAlbums.includes(album.id);
+            addToLikedItem.textContent = isLiked ? 'Remove from Liked Albums' : 'Add to Liked Albums';
+            addToLikedItem.classList.toggle('disabled', false);
+        }
     }
 
     if (mouseX !== undefined && mouseY !== undefined) {
@@ -2737,28 +2747,38 @@ function handleCardMenuAction(action) {
     } else if (action === 'add-to-liked') {
         if (!currentCardData) return;
         const { type, id, singleObj } = currentCardData;
-        let songId = id;
-        if (type === 'song' && singleObj && !id) {
-            songId = singleObj.id;
-        }
-        if (songId) {
-            if (isLiked(songId)) {
-                likedSongs = likedSongs.filter(id => id !== songId);
-                delete likedSongsTimestamps[songId];
+        if (type === 'album') {
+            if (likedAlbums.includes(id)) {
+                likedAlbums = likedAlbums.filter(a => a !== id);
             } else {
-                likedSongs.push(songId);
-                likedSongsTimestamps[songId] = Date.now();
+                likedAlbums.push(id);
             }
             saveState();
-            renderLibraryPage();
-            if (currentPlaylist === 'liked') {
-                renderPlaylistDetail('liked');
-                const likedMusicPageEl = document.getElementById('likedMusicPage');
-                if (likedMusicPageEl && likedMusicPageEl.classList.contains('active')) {
-                    renderLikedMusicPage();
-                }
+            renderLikedAlbumsPage();
+        } else {
+            let songId = id;
+            if (type === 'song' && singleObj && !id) {
+                songId = singleObj.id;
             }
-            updateLikeButton();
+            if (songId) {
+                if (isLiked(songId)) {
+                    likedSongs = likedSongs.filter(id => id !== songId);
+                    delete likedSongsTimestamps[songId];
+                } else {
+                    likedSongs.push(songId);
+                    likedSongsTimestamps[songId] = Date.now();
+                }
+                saveState();
+                renderLibraryPage();
+                if (currentPlaylist === 'liked') {
+                    renderPlaylistDetail('liked');
+                    const likedMusicPageEl = document.getElementById('likedMusicPage');
+                    if (likedMusicPageEl && likedMusicPageEl.classList.contains('active')) {
+                        renderLikedMusicPage();
+                    }
+                }
+                updateLikeButton();
+            }
         }
     }
 }
