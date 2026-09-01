@@ -2342,15 +2342,13 @@ function addLongPressListeners() {
         const id = menuBtn ? parseInt(menuBtn.dataset.id) : parseInt(songId);
         if (isNaN(id)) return;
         addLongPress(row, () => {
-            const rect = row.getBoundingClientRect();
-            const clientX = rect.left + rect.width / 2;
-            const clientY = rect.top;
             if (menuBtn) {
                 menuBtn.classList.add('visible');
-                showCardContextMenu(menuBtn, type, id, null, null, clientX, clientY);
-            } else {
-                showCardContextMenu(row, type, id, null, null, clientX, clientY);
             }
+            const rect = row.getBoundingClientRect();
+            const clientX = Math.min(rect.left + rect.width / 2, window.innerWidth - 110);
+            const clientY = Math.max(rect.top - 10, 10);
+            showCardContextMenu(menuBtn || row, type, id, null, null, clientX, clientY);
         });
         if (menuBtn) {
             row.addEventListener('click', (e) => {
@@ -2407,46 +2405,54 @@ function showCardContextMenu(button, type, id, singleObj, artistObj, mouseX, mou
 
     if (type === 'song') {
         const song = getSongById(id);
-        if (!song && !singleObj) return;
         const targetSong = song || singleObj;
-        playItem.textContent = 'Play Song';
-        playItem.classList.remove('disabled');
-
-        const album = albums.find(a => a.title === targetSong.album);
-        const albumPage = album ? albumPages[album.id] : null;
-        if (albumPage) {
-            goToAlbumItem.classList.remove('disabled');
-            goToAlbumItem.dataset.href = albumPage;
-        } else {
+        if (!targetSong) {
+            playItem.textContent = 'Play Song';
+            playItem.classList.remove('disabled');
             goToAlbumItem.classList.add('disabled');
-            goToAlbumItem.dataset.href = '';
-        }
-
-        const artist = getArtistForSong(targetSong);
-        const artistPage = artist ? artistPages[artist.id] : null;
-        if (artistPage) {
-            goToArtistItem.classList.remove('disabled');
-            goToArtistItem.dataset.href = artistPage;
-        } else {
             goToArtistItem.classList.add('disabled');
-            goToArtistItem.dataset.href = '';
-        }
+            const addToLikedItem = menu.querySelector('[data-action="add-to-liked"]');
+            if (addToLikedItem) addToLikedItem.classList.add('disabled');
+        } else {
+            playItem.textContent = 'Play Song';
+            playItem.classList.remove('disabled');
 
-        const liked = isLiked(targetSong.id);
-        addToLikedItem.textContent = liked ? 'Remove from Liked Music' : 'Add to Liked Music';
-        addToLikedItem.classList.toggle('disabled', false);
+            const album = albums.find(a => a.title === targetSong.album);
+            const albumPage = album ? albumPages[album.id] : null;
+            if (albumPage) {
+                goToAlbumItem.classList.remove('disabled');
+                goToAlbumItem.dataset.href = albumPage;
+            } else {
+                goToAlbumItem.classList.add('disabled');
+                goToAlbumItem.dataset.href = '';
+            }
 
-        const header = menu.querySelector('.context-menu-header');
-        if (header) header.style.display = 'block';
-        const headerTitle = menu.querySelector('.context-menu-header-title');
-        const headerArtist = menu.querySelector('.context-menu-header-artist');
-        const headerDate = menu.querySelector('.context-menu-header-date');
-        if (headerTitle) headerTitle.textContent = targetSong.title;
-        if (headerArtist) headerArtist.textContent = targetSong.artist;
-        const dateAdded = likedSongsTimestamps[targetSong.id] ? formatDateAdded(likedSongsTimestamps[targetSong.id]) : '';
-        if (headerDate) {
-            headerDate.textContent = dateAdded;
-            headerDate.style.display = dateAdded ? 'block' : 'none';
+            const artist = getArtistForSong(targetSong);
+            const artistPage = artist ? artistPages[artist.id] : null;
+            if (artistPage) {
+                goToArtistItem.classList.remove('disabled');
+                goToArtistItem.dataset.href = artistPage;
+            } else {
+                goToArtistItem.classList.add('disabled');
+                goToArtistItem.dataset.href = '';
+            }
+
+            const liked = isLiked(targetSong.id);
+            addToLikedItem.textContent = liked ? 'Remove from Liked Music' : 'Add to Liked Music';
+            addToLikedItem.classList.toggle('disabled', false);
+
+            const header = menu.querySelector('.context-menu-header');
+            if (header) header.style.display = 'block';
+            const headerTitle = menu.querySelector('.context-menu-header-title');
+            const headerArtist = menu.querySelector('.context-menu-header-artist');
+            const headerDate = menu.querySelector('.context-menu-header-date');
+            if (headerTitle) headerTitle.textContent = targetSong.title;
+            if (headerArtist) headerArtist.textContent = targetSong.artist;
+            const dateAdded = likedSongsTimestamps[targetSong.id] ? formatDateAdded(likedSongsTimestamps[targetSong.id]) : '';
+            if (headerDate) {
+                headerDate.textContent = dateAdded;
+                headerDate.style.display = dateAdded ? 'block' : 'none';
+            }
         }
     } else if (type === 'album') {
         const album = albums.find(a => a.id === id);
@@ -3004,6 +3010,16 @@ document.addEventListener('contextmenu', e => {
         const songId = parseInt(songRow.dataset.songId);
         if (!isNaN(songId)) {
             showCardContextMenu(songRow, 'song', songId, null, null, e.clientX, e.clientY);
+        }
+        return;
+    }
+    
+    const artistSongRow = e.target.closest('.artist-song-row');
+    if (artistSongRow) {
+        e.preventDefault();
+        const songId = parseInt(artistSongRow.dataset.songId);
+        if (!isNaN(songId)) {
+            showCardContextMenu(artistSongRow, 'song', songId, null, null, e.clientX, e.clientY);
         }
         return;
     }
