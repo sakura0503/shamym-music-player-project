@@ -3496,7 +3496,7 @@ function renderArtistPage() {
                 : `<div style="width:100%;height:100%;background: linear-gradient(135deg, ${song.color}, #333);display:flex;align-items:center;justify-content:center;border-radius:4px;color:#fff;font-weight:600;font-size:0.75rem;">${song.title.substring(0, 2).toUpperCase()}</div>`;
             
             html += `
-                <div class="artist-song-row ${isPlaying ? 'playing' : ''}" onclick="playSong(${song.id})" style="flex: 0 0 280px; min-width: 280px;">
+                <div class="artist-song-row ${isPlaying ? 'playing' : ''}" data-song-id="${song.id}" onclick="playSong(${song.id})" style="flex: 0 0 280px; min-width: 280px;">
                     <div class="artist-song-num">${index + 1}</div>
                     <div class="artist-song-img">${coverHtml}</div>
                     <div class="artist-song-info">
@@ -3508,7 +3508,6 @@ function renderArtistPage() {
                     </span>
                     <span class="artist-song-duration">${song.duration}</span>
                     <span class="song-menu" onclick="event.stopPropagation(); showCardContextMenu(this, 'song', ${song.id});">
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><circle cx="6" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18" cy="12" r="2"/></svg>
                     </span>
                 </div>
             `;
@@ -3531,7 +3530,7 @@ function renderArtistPage() {
                 : `<div style="width:100%;height:100%;background: linear-gradient(135deg, ${song.color}, #333);display:flex;align-items:center;justify-content:center;border-radius:4px;color:#fff;font-weight:600;font-size:0.75rem;">${song.title.substring(0, 2).toUpperCase()}</div>`;
             
             html += `
-                <div class="artist-song-row ${isPlaying ? 'playing' : ''}" onclick="playSong(${song.id})">
+                <div class="artist-song-row ${isPlaying ? 'playing' : ''}" data-song-id="${song.id}" onclick="playSong(${song.id})">
                     <div class="artist-song-num">${index + 1}</div>
                     <div class="artist-song-img">${coverHtml}</div>
                     <div class="artist-song-info">
