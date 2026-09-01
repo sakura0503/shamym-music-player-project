@@ -2297,6 +2297,7 @@ searchInput.addEventListener('keydown', e => {
     if (e.key === 'Enter') {
         const query = searchInput.value.trim();
         if (query) {
+            searchResults.classList.remove('active');
             navigateTo(`search.html?q=${encodeURIComponent(query)}`);
         }
     }
@@ -2332,23 +2333,25 @@ function initScrollButtons() {
 
 function addLongPressListeners() {
     if (!isMobile()) return;
-    document.querySelectorAll('.artist-song-row, .album-song-row').forEach(row => {
+    document.querySelectorAll('.artist-song-row, .album-song-row, .search-result-page-item').forEach(row => {
         if (row.dataset.longPressInitialized) return;
         row.dataset.longPressInitialized = 'true';
         const songId = row.dataset.songId;
-        if (!songId) return;
-        const menuBtn = row.querySelector('.song-menu');
+        const menuBtn = row.querySelector('.song-menu, .card-menu-btn');
+        const type = menuBtn ? menuBtn.dataset.type : 'song';
+        const id = menuBtn ? parseInt(menuBtn.dataset.id) : parseInt(songId);
+        if (isNaN(id)) return;
         addLongPress(row, () => {
             if (menuBtn) {
                 menuBtn.classList.add('visible');
-                showCardContextMenu(menuBtn, 'song', parseInt(songId));
+                showCardContextMenu(menuBtn, type, id);
             } else {
-                showCardContextMenu(row, 'song', parseInt(songId));
+                showCardContextMenu(row, type, id);
             }
         });
         if (menuBtn) {
             row.addEventListener('click', (e) => {
-                if (!e.target.closest('.song-menu')) {
+                if (!e.target.closest('.song-menu') && !e.target.closest('.card-menu-btn')) {
                     menuBtn.classList.remove('visible');
                 }
             });
@@ -2430,6 +2433,8 @@ function showCardContextMenu(button, type, id, singleObj, artistObj, mouseX, mou
         addToLikedItem.textContent = liked ? 'Remove from Liked Music' : 'Add to Liked Music';
         addToLikedItem.classList.toggle('disabled', false);
 
+        const header = menu.querySelector('.context-menu-header');
+        if (header) header.style.display = 'block';
         const headerTitle = menu.querySelector('.context-menu-header-title');
         const headerArtist = menu.querySelector('.context-menu-header-artist');
         const headerDate = menu.querySelector('.context-menu-header-date');
@@ -2464,6 +2469,9 @@ function showCardContextMenu(button, type, id, singleObj, artistObj, mouseX, mou
             goToArtistItem.classList.add('disabled');
             goToArtistItem.dataset.href = '';
         }
+        
+        const header = menu.querySelector('.context-menu-header');
+        if (header) header.style.display = 'none';
     }
 
     if (mouseX !== undefined && mouseY !== undefined) {

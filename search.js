@@ -145,6 +145,10 @@ function showSearchResultsPage(query) {
     });
 
     showPanel('songs');
+    
+    if (typeof addLongPressListeners === 'function') {
+        addLongPressListeners();
+    }
 }
 
 function renderSearchPage() {
