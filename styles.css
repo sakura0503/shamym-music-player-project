@@ -967,7 +967,7 @@ body {
 
 .time {
     font-size: 0.75rem;
-    color: var(--text-muted);
+    color: #1a5c30;
     min-width: 40px;
     text-align: center;
 }
@@ -2524,7 +2524,7 @@ body {
 
 .expanded-time {
     font-size: 0.75rem;
-    color: var(--text-muted);
+    color: #1a5c30;
     min-width: 40px;
     text-align: center;
     flex-shrink: 0;
@@ -2557,6 +2557,42 @@ body {
 
     .expanded-progress-bar:hover .expanded-progress-fill {
         background: var(--accent);
+    }
+
+    .mobile-repeat-btn,
+    .mobile-shuffle-btn,
+    .mobile-like-btn,
+    .mobile-controls-below {
+        display: none;
+    }
+
+    @media (max-width: 780px) {
+        .mobile-repeat-btn {
+            display: flex;
+        }
+
+        .mobile-shuffle-btn {
+            display: flex;
+        }
+
+        .mobile-like-btn {
+            display: flex;
+        }
+
+        .mobile-controls-below {
+            display: flex;
+            justify-content: flex-end;
+            gap: 16px;
+            padding: 8px 16px 0;
+        }
+
+        .expanded-player-extras {
+            display: none !important;
+        }
+
+        .expanded-controls-row {
+            justify-content: center;
+        }
     }
 
 @media (max-width: 780px) {
@@ -2639,6 +2675,10 @@ body {
     }
 
     .library-playlists-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .liked-albums-grid {
         grid-template-columns: repeat(2, 1fr);
     }
 }

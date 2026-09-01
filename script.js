@@ -1925,6 +1925,16 @@ function updateLikeButton() {
         }
         expandedLikeBtn.style.color = liked ? 'var(--accent)' : 'var(--text-secondary)';
     }
+
+    const mobileLikeBtn = document.getElementById('mobileExpandedLikeBtn');
+    if (mobileLikeBtn) {
+        const mobileSvg = mobileLikeBtn.querySelector('svg');
+        if (mobileSvg) {
+            mobileSvg.setAttribute('stroke', liked ? 'var(--accent)' : 'currentColor');
+            mobileSvg.setAttribute('fill', liked ? 'var(--accent)' : 'none');
+        }
+        mobileLikeBtn.style.color = liked ? 'var(--accent)' : 'var(--text-secondary)';
+    }
 }
 
 function updatePlayerControlsState() {
@@ -1952,6 +1962,12 @@ function updatePlayerControlsState() {
         if (mobilePauseIcon) mobilePauseIcon.style.display = isPlaying ? 'block' : 'none';
     }
     const expandedControls = [expandedPlayPauseBtn, expandedPrevBtn, expandedNextBtn, expandedLikeBtn, expandedShuffleBtn, expandedRepeatBtn];
+    const mobileRepeatBtn = document.getElementById('mobileExpandedRepeatBtn');
+    const mobileLikeBtn = document.getElementById('mobileExpandedLikeBtn');
+    const mobileShuffleBtn = document.getElementById('mobileExpandedShuffleBtn');
+    if (mobileRepeatBtn) expandedControls.push(mobileRepeatBtn);
+    if (mobileLikeBtn) expandedControls.push(mobileLikeBtn);
+    if (mobileShuffleBtn) expandedControls.push(mobileShuffleBtn);
     expandedControls.forEach(btn => {
         if (!btn) return;
         if (hasSong) {
@@ -1980,6 +1996,10 @@ function updateShuffleUI() {
     if (otherShuffleBtn && otherShuffleBtn !== shuffleBtn) {
         buttons.push(otherShuffleBtn);
     }
+    const mobileShuffleBtn = document.getElementById('mobileExpandedShuffleBtn');
+    if (mobileShuffleBtn) {
+        buttons.push(mobileShuffleBtn);
+    }
     
     buttons.forEach(btn => {
         if (!btn) return;
@@ -2001,11 +2021,15 @@ function updateRepeatUI() {
     const isActive = repeat > 0;
     const repeatColor = isActive ? 'var(--accent)' : 'var(--text-secondary)';
     const svg = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>';
-    
+
     const buttons = [repeatBtn, expandedRepeatBtn];
     const otherRepeatBtn = document.getElementById('repeatBtn');
     if (otherRepeatBtn && otherRepeatBtn !== repeatBtn) {
         buttons.push(otherRepeatBtn);
+    }
+    const mobileRepeatBtn = document.getElementById('mobileExpandedRepeatBtn');
+    if (mobileRepeatBtn) {
+        buttons.push(mobileRepeatBtn);
     }
     
     buttons.forEach(btn => {
@@ -3612,6 +3636,41 @@ if (expandedRepeatBtn) {
         repeat = (repeat + 1) % 3;
         updateRepeatUI();
         saveAudioState();
+    });
+}
+
+const mobileExpandedRepeatBtn = document.getElementById('mobileExpandedRepeatBtn');
+if (mobileExpandedRepeatBtn) {
+    mobileExpandedRepeatBtn.addEventListener('click', () => {
+        repeat = (repeat + 1) % 3;
+        updateRepeatUI();
+        saveAudioState();
+    });
+}
+
+const mobileExpandedShuffleBtn = document.getElementById('mobileExpandedShuffleBtn');
+if (mobileExpandedShuffleBtn) {
+    mobileExpandedShuffleBtn.addEventListener('click', () => {
+        if (!currentSong) return;
+        shuffle = !shuffle;
+        if (shuffle) {
+            applyShuffleToQueue();
+        } else {
+            restoreQueueFromOriginal();
+        }
+        updateShuffleUI();
+        renderQueuePanel();
+        saveAudioState();
+    });
+}
+
+const mobileExpandedLikeBtn = document.getElementById('mobileExpandedLikeBtn');
+if (mobileExpandedLikeBtn) {
+    mobileExpandedLikeBtn.addEventListener('click', () => {
+        if (!currentSong) return;
+        toggleLike(currentSong.id);
+        updateLikeButton();
+        if (expandedPlayerOpen) renderExpandedPlayer();
     });
 }
 
